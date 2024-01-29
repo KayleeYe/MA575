@@ -8,6 +8,7 @@
 
 #notice when you "copy the file address" of the csv file you need by clicking right of your mouse,
 #the file path has '\' but you need to change the slash to right '/' so R can read it successfully 
+#feel free to paste your own file path of the file to customize for your own use
 file_path = "D:/copied from desktop/Elsa BUBUBU/大三下/ma575/project/day.csv"
 
 mydata <- read.csv(file_path,header=T)#facebook dataset has header, so header=T
