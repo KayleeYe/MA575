@@ -1,0 +1,181 @@
+---
+title: 'Bike Sharing'
+author: "Coders"
+date: "Sunday, February 11, 2024"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+---
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+library(ggplot2)
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+datasetBike <- read.csv('/Users/yeyibo/Desktop/Senior_2nd/MA575/lab_project/bike+sharing+dataset/day.csv')
+head(datasetBike)
+```
+
+```{r}
+season = datasetBike$season #season: (1:winter, 2:spring, 3:summer, 4:fall)
+yr = datasetBike$yr #year: year (0: 2011, 1:2012)
+month = datasetBike$mnth #month ( 1 to 12)
+holiday = datasetBike$holiday #weather day is holiday or not (extracted from http://dchr.dc.gov/page/holiday-schedule)
+wkday= datasetBike$weekday #day of the week (0=Sunday, 1=Monday,..., 6=Saturday)
+workingday = datasetBike$workingday #if day is neither weekend nor holiday is 1, otherwise is 0.
+weather = datasetBike$weathersit
+#1: Clear, Few clouds, Partly cloudy, Partly cloudy
+#2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist
+#3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds
+#4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog
+temp = datasetBike$temp
+#Normalized temperature in Celsius. The values are derived via (t-t_min)/(t_max-t_min), 
+#t_min=-8, t_max=+39 (only in hourly scale)
+atemp = datasetBike$atemp
+#Normalized feeling temperature in Celsius. The values are derived via (t-t_min)/(t_max-t_min), 
+#t_min=-16, t_max=+50 (only in hourly scale)
+hum = datasetBike$hum #Normalized humidity. The values are divided to 100 (max)
+wind = datasetBike$windspeed # Normalized wind speed. The values are divided to 67 (max)
+casual = datasetBike$casual #count of casual users
+registered = datasetBike$registered #count of registered users
+cnt = datasetBike$cnt #the total rental bikes including both casual and registered
+```
+
+## Descriptive Statistics
+
+```{r}
+summary(cnt)
+hist(cnt, main = "Histogram of Number of Bikes Rented per Day", xlab= "number of bikes")
+```
+
+## The Holiday vs cnt
+
+```{r}
+summary(holiday)
+
+# Calculate the frequency of holidays
+freq_table <- table(holiday)
+num_zeros <- freq_table[["0"]]
+num_ones <- freq_table[["1"]]
+print(paste("Number of non-holidays:", num_zeros))
+print(paste("Number of holidays:", num_ones))
+#show proportion of holidays
+holiday_proportion <- prop.table(table(holiday))
+"The proportion of holidays"
+print(holiday_proportion)
+#show histogram of holiday
+hist(holiday)
+
+
+#Plot the number of bikes rented on holiday (which is either 0 or 1)
+ggplot(datasetBike, aes(x = dteday, y = cnt, fill = factor(holiday))) +
+  geom_bar(stat = "identity") +
+  labs(x = "Date", y = "Number of Bikes Rented", title = "Number of Bikes Rented on Holidays") +
+  scale_fill_manual(values = c("0" = "yellow", "1" = "blue")) +
+  theme_minimal()
+
+```
+
+```{r}
+#box plot
+# Filter the data for holidays
+holiday_data <- subset(datasetBike, holiday == 1)
+non_holiday_data <- subset(datasetBike, holiday == 0)
+print("for holiday")
+summary(holiday_data$cnt)
+print("for non holiday")
+summary(non_holiday_data$cnt)
+
+ggplot() +
+  geom_boxplot(data = holiday_data, aes(x = "Holiday", y = cnt), fill = "skyblue") +
+  geom_boxplot(data = non_holiday_data, aes(x = "Non-Holiday", y = cnt), fill = "lightgreen") +
+  labs(x = "Holiday[1]", y = "Number of Bikes Rented", title = "Box Plot of Bikes Rented on Holidays vs Non-Holidays") +
+  theme_minimal() +
+  facet_wrap(~holiday)
+```
+
+```{r}
+m.ols <- lm(cnt ~ holiday, data = datasetBike)
+summary(m.ols)
+```
+
+## The Day of the Week vs cnt
+
+```{r}
+#descriptive stats for Weekday
+summary(wkday)
+hist(wkday)
+sunday <- sum(wkday==0) #105
+sunday
+monday <- sum(wkday==1) #105
+monday
+tues <- sum(wkday==2) #105
+tues #104
+weds <- sum(wkday==3)
+weds #104
+thurs <- sum(wkday==3)
+thurs #104
+fri <- sum(wkday==3)
+fri #104
+sat <- sum(wkday==3)
+sat #104
+```
+
+```{r}
+
+#Descriptive Stats for Weather
+#weather (categorical, 1-4 with a higher number indicating worse weather)
+hist(weather)
+one <- sum(weather==1)
+one #463
+two <- sum(weather==2)
+two #247
+three <- sum(weather==3)
+three #21
+
+#Descriptive Stats for wind
+#windspeed (continuous)
+hist(wind)
+summary(wind)
+
+#Descriptive Stats for Tempertature
+#temperature (Celsius, continuous)
+hist(temp)
+summary(temp)
+
+#Descriptive Stats for Feelig Temperature
+#feeling temperature (Celsius, continuous)
+hist(atemp)
+summary(atemp)
+
+##Descriptive Stats for Humidity
+#humidity (continuous)
+hist(hum)
+summary(hum)
+```
+
+
+```{r}
+library(readxl)
+library(car)
+library (ggplot2)
+model1 <- lm(cnt~holiday)
+summary(model1)
+scatterplot(wkday,cnt,xlab="Day of the Week",ylab="Cnt")
+model2 <- lm(cnt~wkday)
+summary(model2)
+scatterplot(weather,cnt,xlab="Weather",ylab="Cnt")
+model3 <- lm(cnt~weather)
+summary(model3)
+```
+
+```{r}
+
+```
