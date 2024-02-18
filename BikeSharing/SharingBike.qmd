@@ -22,7 +22,7 @@ library(car)
 The `echo: false` option disables the printing of code (only output is displayed).
 
 ```{r}
-datasetBike <- read.csv('/Users/yeyibo/Desktop/Senior_2nd/MA575/lab_project/bike+sharing+dataset/day.csv')
+datasetBike <- read.csv('../data/day.csv')
 head(datasetBike)
 ```
 
