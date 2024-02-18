@@ -14,6 +14,9 @@ When you click the **Render** button a document will be generated that includes 
 
 ```{r}
 library(ggplot2)
+library(readxl)
+library(car)
+#library(GGally)
 ```
 
 The `echo: false` option disables the printing of code (only output is displayed).
@@ -97,8 +100,7 @@ ggplot() +
   geom_boxplot(data = holiday_data, aes(x = "Holiday", y = cnt), fill = "skyblue") +
   geom_boxplot(data = non_holiday_data, aes(x = "Non-Holiday", y = cnt), fill = "lightgreen") +
   labs(x = "Holiday[1]", y = "Number of Bikes Rented", title = "Box Plot of Bikes Rented on Holidays vs Non-Holidays") +
-  theme_minimal() +
-  facet_wrap(~holiday)
+  theme_minimal() + facet_wrap(~holiday)
 ```
 
 ```{r}
@@ -161,7 +163,6 @@ hist(hum)
 summary(hum)
 ```
 
-
 ```{r}
 library(readxl)
 library(car)
@@ -177,5 +178,137 @@ summary(model3)
 ```
 
 ```{r}
-
+library(ggplot2)
+ggplot(datasetBike, aes(x = temp, y = cnt)) +
+  geom_point() +
+  labs(title = "Scatterplot of Number of Bikes Rented over Temperature",
+       x = "Temperature",
+       y = "Number of Bikes Rented") +
+  theme_minimal()
 ```
+
+##Box Plots
+
+```{r}
+boxplot(temp, main="Boxplot of Temperature", xlab="Temperature", horizontal = TRUE)
+# Get the summary of the temperature
+temp_summary <- summary(temp)
+# Construct the summary text
+summary_text <- paste("Min:", temp_summary["Min."], 
+                      "1st Qu.:", temp_summary["1st Qu."], 
+                      "Median:", temp_summary["Median"], 
+                      "Mean:", temp_summary["Mean"],
+                      "3rd Qu.:", temp_summary["3rd Qu."], 
+                      "Max:", temp_summary["Max."])
+# Place the summary text below the boxplot
+mtext(summary_text, side = 1, line = 4, cex = 0.7)
+
+
+boxplot(atemp, main="Boxplot of Feeling Temperature", xlab="Feeling Temperature", horizontal = TRUE)
+atemp_summary <-summary(atemp)
+summary_text2 <- paste("Min:", atemp_summary["Min."], 
+                      "1st Qu.:", atemp_summary["1st Qu."], 
+                      "Median:", atemp_summary["Median"], 
+                      "Mean:", atemp_summary["Mean"],
+                      "3rd Qu.:", atemp_summary["3rd Qu."], 
+                      "Max:", atemp_summary["Max."])
+# Place the summary text below the boxplot
+mtext(summary_text2, side = 1, line = 4, cex = 0.7)
+
+boxplot(wind, main="Boxplot of Wind Speed", xlab="Wind Speed", horizontal = TRUE)
+wind_summary <-summary(wind)
+summary_text3 <- paste("Min:", wind_summary["Min."], 
+                      "1st Qu.:", wind_summary["1st Qu."], 
+                      "Median:", wind_summary["Median"], 
+                      "Mean:", wind_summary["Mean"],
+                      "3rd Qu.:", wind_summary["3rd Qu."], 
+                      "Max:", wind_summary["Max."])
+# Place the summary text below the boxplot
+mtext(summary_text3, side = 1, line = 4, cex = 0.7)
+
+boxplot(hum, main="Boxplot of Humidity", xlab="Humidity", horizontal = TRUE)
+hum_summary <-summary(hum)
+summary_text4 <- paste("Min:", hum_summary["Min."],
+                      "1st Qu.:", hum_summary["1st Qu."], 
+                      "Median:", hum_summary["Median"], 
+                      "Mean:", hum_summary["Mean"],
+                      "3rd Qu.:", hum_summary["3rd Qu."], 
+                      "Max:", hum_summary["Max."])
+# Place the summary text below the boxplot
+mtext(summary_text4, side = 1, line = 4, cex = 0.7)
+```
+##Scatter Plots
+```{r}
+scatterplot(temp, cnt,
+            xlab = "Temperature", 
+            ylab = "Number of Bikes Rented", 
+            main = "Scatter Plot of Number of Bikes Rented vs. Temperature")
+scatterplot(atemp, cnt,
+            xlab = "Feeling Temperature", 
+            ylab = "Number of Bikes Rented", 
+            main = "Scatter Plot of Number of Bikes Rented vs. Feeling Temperature")
+scatterplot(hum, cnt,
+            xlab = "Humidity", 
+            ylab = "Number of Bikes Rented", 
+            main = "Scatter Plot of Number of Bikes Rented vs. Humidity")
+scatterplot(wind, cnt,
+            xlab = "Wind Speed", 
+            ylab = "Number of Bikes Rented", 
+            main = "Scatter Plot of Number of Bikes Rented vs. Wind Speed")
+```
+
+##Residual Plots
+```{r}
+#draw the residual plot for each x covariate(tempeartue, feeling temprature, windspeed, humidity) vs y=cnt
+model1 <- lm(cnt~temp, data=datasetBike)
+res <- resid(model1)
+plot(fitted(model1), res,
+     xlab = "Temperature",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Temperature")
+abline(0,0)
+
+model2 <- lm(cnt~atemp, data=datasetBike)
+res2 <- resid(model2)
+plot(fitted(model2), res2,
+     xlab = "Feeling Temperature",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Feeling Temperature")
+abline(0,0)
+
+model3 <- lm(cnt~wind, data=datasetBike)
+res3 <- resid(model3)
+plot(fitted(model3), res3,
+     xlab = "Wind Speed",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Wind Speed")
+abline(0,0)
+
+model4 <- lm(cnt~hum, data=datasetBike)
+res4 <- resid(model4)
+plot(fitted(model4), res4,
+     xlab = "Humidity",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Humidity")
+abline(0,0)
+
+library(car)
+cat("For Temperatue \n")
+ncvTest(model1)
+cat("\nFor Feeling Temperature \n")
+ncvTest(model2)
+cat("\nFor Windspeed \n")
+ncvTest(model3)
+cat("\nFor Humidity \n")
+ncvTest(model4)
+```
+
+We apply ncvTest in R. The test is known as **Breusch-Pagan test**, which is for testing heteroscedasticity.
+
+**\*Heteroscedasticity** refers to a situation in a regression model where the variance of residuals or errors is not constant across all levels of the independent variable(s). It violates one of the key assumptions of ordinary least squares (OLS) regression, which is that the variance of the errors is constant (homoscedasticity).
+
+\***P-value**: A **low p-value** (commonly below 0.05) suggests that we reject the null hypothesis, indicating the presence of heteroscedasticity (non-constant variance). A **high p-value**, as in this case, suggests that there is not enough evidence to reject the null hypothesis, indicating that the residuals can be considered homoscedastic (constant variance).
+
+\***Null Hypothesis**: there is no heteroscedasticity (the model is constant variance).
+
+Since for the above four covaraites, I made the linear regression model for each x v.s. y=cnt, get the residual plots for each, and use the Breusch_Pagan test to test if there is a heteroscedasticity. Because the model of (x = windspeed, y = cnt) has the lowest Chi-Square, and the highest p-value, we are failed to reject the null hypothesis. Thus, we may choose **Windspeed** as our **Covariate**.
