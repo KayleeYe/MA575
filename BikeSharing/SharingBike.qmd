@@ -181,39 +181,115 @@ summary(model3)
 library(ggplot2)
 ggplot(datasetBike, aes(x = temp, y = cnt)) +
   geom_point() +
-  labs(title = "Scatterplot of Count over Time",
+  labs(title = "Scatterplot of Number of Bikes Rented over Temperature",
        x = "Temperature",
-       y = "Count") +
+       y = "Number of Bikes Rented") +
   theme_minimal()
 ```
 
+##Box Plots
+
 ```{r}
-scatterplot(temp, cnt)
-scatterplot(atemp, cnt)
-scatterplot(hum, cnt)
-scatterplot(wind, cnt)
+boxplot(temp, main="Boxplot of Temperature", xlab="Temperature", horizontal = TRUE)
+# Get the summary of the temperature
+temp_summary <- summary(temp)
+# Construct the summary text
+summary_text <- paste("Min:", temp_summary["Min."], 
+                      "1st Qu.:", temp_summary["1st Qu."], 
+                      "Median:", temp_summary["Median"], 
+                      "Mean:", temp_summary["Mean"],
+                      "3rd Qu.:", temp_summary["3rd Qu."], 
+                      "Max:", temp_summary["Max."])
+# Place the summary text below the boxplot
+mtext(summary_text, side = 1, line = 4, cex = 0.7)
+
+
+boxplot(atemp, main="Boxplot of Feeling Temperature", xlab="Feeling Temperature", horizontal = TRUE)
+atemp_summary <-summary(atemp)
+summary_text2 <- paste("Min:", atemp_summary["Min."], 
+                      "1st Qu.:", atemp_summary["1st Qu."], 
+                      "Median:", atemp_summary["Median"], 
+                      "Mean:", atemp_summary["Mean"],
+                      "3rd Qu.:", atemp_summary["3rd Qu."], 
+                      "Max:", atemp_summary["Max."])
+# Place the summary text below the boxplot
+mtext(summary_text2, side = 1, line = 4, cex = 0.7)
+
+boxplot(wind, main="Boxplot of Wind Speed", xlab="Wind Speed", horizontal = TRUE)
+wind_summary <-summary(wind)
+summary_text3 <- paste("Min:", wind_summary["Min."], 
+                      "1st Qu.:", wind_summary["1st Qu."], 
+                      "Median:", wind_summary["Median"], 
+                      "Mean:", wind_summary["Mean"],
+                      "3rd Qu.:", wind_summary["3rd Qu."], 
+                      "Max:", wind_summary["Max."])
+# Place the summary text below the boxplot
+mtext(summary_text3, side = 1, line = 4, cex = 0.7)
+
+boxplot(hum, main="Boxplot of Humidity", xlab="Humidity", horizontal = TRUE)
+hum_summary <-summary(hum)
+summary_text4 <- paste("Min:", hum_summary["Min."],
+                      "1st Qu.:", hum_summary["1st Qu."], 
+                      "Median:", hum_summary["Median"], 
+                      "Mean:", hum_summary["Mean"],
+                      "3rd Qu.:", hum_summary["3rd Qu."], 
+                      "Max:", hum_summary["Max."])
+# Place the summary text below the boxplot
+mtext(summary_text4, side = 1, line = 4, cex = 0.7)
+```
+##Scatter Plots
+```{r}
+scatterplot(temp, cnt,
+            xlab = "Temperature", 
+            ylab = "Number of Bikes Rented", 
+            main = "Scatter Plot of Number of Bikes Rented vs. Temperature")
+scatterplot(atemp, cnt,
+            xlab = "Feeling Temperature", 
+            ylab = "Number of Bikes Rented", 
+            main = "Scatter Plot of Number of Bikes Rented vs. Feeling Temperature")
+scatterplot(hum, cnt,
+            xlab = "Humidity", 
+            ylab = "Number of Bikes Rented", 
+            main = "Scatter Plot of Number of Bikes Rented vs. Humidity")
+scatterplot(wind, cnt,
+            xlab = "Wind Speed", 
+            ylab = "Number of Bikes Rented", 
+            main = "Scatter Plot of Number of Bikes Rented vs. Wind Speed")
 ```
 
+##Residual Plots
 ```{r}
 #draw the residual plot for each x covariate(tempeartue, feeling temprature, windspeed, humidity) vs y=cnt
 model1 <- lm(cnt~temp, data=datasetBike)
 res <- resid(model1)
-plot(fitted(model1), res)
+plot(fitted(model1), res,
+     xlab = "Temperature",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Temperature")
 abline(0,0)
 
 model2 <- lm(cnt~atemp, data=datasetBike)
 res2 <- resid(model2)
-plot(fitted(model2), res2)
+plot(fitted(model2), res2,
+     xlab = "Feeling Temperature",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Feeling Temperature")
 abline(0,0)
 
 model3 <- lm(cnt~wind, data=datasetBike)
 res3 <- resid(model3)
-plot(fitted(model3), res3)
+plot(fitted(model3), res3,
+     xlab = "Wind Speed",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Wind Speed")
 abline(0,0)
 
 model4 <- lm(cnt~hum, data=datasetBike)
 res4 <- resid(model4)
-plot(fitted(model4), res4)
+plot(fitted(model4), res4,
+     xlab = "Humidity",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Humidity")
 abline(0,0)
 
 library(car)
