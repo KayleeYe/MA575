@@ -187,7 +187,39 @@ ggplot(datasetBike, aes(x = temp, y = cnt)) +
   theme_minimal()
 ```
 
-##Box Plots
+## Split the data by seasons
+
+```{r}
+#adding vertical dashed lines at specified positions within the combined data range
+#abline(v = c(79, 172, 266, 445, 631), lty = "dashed")
+scatterplot(datasetBike$instant, cnt,
+            xlab = "Date",
+            ylab = "Number of Bikes Rented",
+            main = "Scatter Plot of Number of Bikes Rented vs. Date")
+abline(v = 79, lty = "dashed")
+abline(v = 172, lty = "dashed")
+abline(v = 266, lty = "dashed")
+abline(v = 356, lty = "dashed")
+abline(v = 445, lty = "dashed")
+abline(v = 537, lty = "dashed")
+abline(v = 631, lty = "dashed")
+abline(v = 721, lty = "dashed")
+
+#Spring Summer
+subset1 <- datasetBike[datasetBike$instant >= 79 & datasetBike$instant <= 266, ]
+subset2 <- datasetBike[datasetBike$instant >= 445 & datasetBike$instant <= 631, ]
+
+# Step 2: Combine the subsets
+combinedData <- rbind(subset1, subset2)
+# Step 3: Plot the scatter plot with the combined data
+plot(combinedData$instant, combinedData$cnt,  # Adjust 'cnt' if it's in a different data structure
+     xlab = "Instant",
+     ylab = "Number of Bikes Rented",
+     main = "Scatter Plot of Number of Bikes Rented vs. Instant",
+     pch = 19)  # pch = 19 makes the points solid circles for better visibility
+```
+
+## Box Plots
 
 ```{r}
 boxplot(temp, main="Boxplot of Temperature", xlab="Temperature", horizontal = TRUE)
@@ -237,7 +269,9 @@ summary_text4 <- paste("Min:", hum_summary["Min."],
 # Place the summary text below the boxplot
 mtext(summary_text4, side = 1, line = 4, cex = 0.7)
 ```
-##Scatter Plots
+
+## Scatter Plots
+
 ```{r}
 scatterplot(temp, cnt,
             xlab = "Temperature", 
@@ -257,7 +291,8 @@ scatterplot(wind, cnt,
             main = "Scatter Plot of Number of Bikes Rented vs. Wind Speed")
 ```
 
-##Residual Plots
+## Residual Plots
+
 ```{r}
 #draw the residual plot for each x covariate(tempeartue, feeling temprature, windspeed, humidity) vs y=cnt
 model1 <- lm(cnt~temp, data=datasetBike)
@@ -312,3 +347,125 @@ We apply ncvTest in R. The test is known as **Breusch-Pagan test**, which is for
 \***Null Hypothesis**: there is no heteroscedasticity (the model is constant variance).
 
 Since for the above four covaraites, I made the linear regression model for each x v.s. y=cnt, get the residual plots for each, and use the Breusch_Pagan test to test if there is a heteroscedasticity. Because the model of (x = windspeed, y = cnt) has the lowest Chi-Square, and the highest p-value, we are failed to reject the null hypothesis. Thus, we may choose **Windspeed** as our **Covariate**.
+
+## Residual Plots and QQ Plots
+
+```{r}
+library(ggplot2)
+
+#fiting models for each of the variables
+model_hum <- lm(cnt ~ hum, data = datasetBike)
+model_wind <- lm(cnt ~ windspeed, data = datasetBike)
+model_temp <- lm(cnt ~ temp, data = datasetBike)
+model_atemp <- lm(cnt ~ atemp, data = datasetBike)
+
+residuals_hum <- data.frame(Predicted = predict(model_hum), Residuals = residuals(model_hum))
+residuals_wind <- data.frame(Predicted = predict(model_wind), Residuals = residuals(model_wind))
+residuals_temp <- data.frame(Predicted = predict(model_temp), Residuals = residuals(model_temp))
+residuals_atemp <- data.frame(Predicted = predict(model_atemp), Residuals = residuals(model_atemp))
+
+###residual plots for each od the variables
+#humidity
+res_hum <- resid(model_hum)
+plot(fitted(model_hum), res_hum, main="Fitted vs Residuals Plot for Humidity", xlab="Fitted Values", ylab="Residuals")
+abline(0,0)
+qqnorm(res_hum, main = "Q-Q Plot of Residuals for Humidity vs. # of Bikes Rented")
+qqline(res_hum) 
+
+#wind
+res_wind <- resid(model_wind)
+plot(fitted(model_wind), res_wind, main="Fitted vs Residuals Plot for Wind", xlab="Fitted Values", ylab="Residuals")
+abline(0,0)
+qqnorm(res_wind, main = "Q-Q Plot of Residuals for Wind Speed vs. # of Bikes Rented")
+qqline(res_wind) 
+
+#temp
+res_temp <- resid(model_temp)
+plot(fitted(model_temp), res_temp, main="Fitted vs Residuals Plot for Temperature", xlab="Fitted Values", ylab="Residuals")
+abline(0,0)
+qqnorm(res_temp, main = "Q-Q Plot of Residuals for Temperature vs. # of Bikes Rented")
+qqline(res_temp) 
+
+
+#atemp
+res_atemp <- resid(model_atemp)
+plot(fitted(model_atemp), res_atemp, main="Fitted vs Residuals Plot for Feel-like temperature", xlab="Fitted Values", ylab="Residuals")
+abline(0,0)
+qqnorm(res_atemp, main = "Q-Q Plot of Residuals for Feeling Temprature vs. # of Bikes Rented")
+qqline(res_atemp) 
+
+```
+
+## Some Transformations on the variables
+
+```{r}
+#log (y)
+model3_t_1 <- lm(log(cnt) ~ hum, data=datasetBike)
+res3_t_1 <- resid(model3_t_1)
+plot(fitted(model3_t_1), res3_t_1,
+     xlab = "Humidity",
+     ylab = "Log of Number of Bike Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Log Bike Count on Feeling Temperature")
+abline(0,0)
+
+tq3_t_1 <- qnorm(ppoints(length(res3_t_1)))
+qqplot(tq3_t_1, res3_t_1, main = "Normal Q-Q Plot", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+qqline(res3_t_1,col = "black")
+plot
+
+#sqrt both
+model3_t_2 <- lm(sqrt(cnt) ~ sqrt(hum), data=datasetBike)
+res3_t_2 <- resid(model3_t_2)
+plot(fitted(model3_t_2), res3_t_2,
+     xlab = "Square Root of Humidity",
+     ylab = "Square Root of Number of Bike Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Square Root Bike Count on Feeling Temperature")
+abline(0,0)
+
+tq3_t_2 <- qnorm(ppoints(length(res3_t_2)))
+qqplot(tq3_t_2, res3_t_2, main = "Normal Q-Q Plot", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+qqline(res3_t_2,col = "black")
+plot
+
+#sqrt y
+model3_t_3 <- lm(sqrt(cnt) ~ hum, data=datasetBike)
+res3_t_3 <- resid(model3_t_3)
+plot(fitted(model3_t_3), res3_t_3,
+     xlab = "Humidity",
+     ylab = "Square Root of Number of Bike Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Square Root Bike Count on Feeling Temperature")
+abline(0,0)
+
+tq3_t_3 <- qnorm(ppoints(length(res3_t_3)))
+qqplot(tq3_t_3, res3_t_3, main = "Normal Q-Q Plot", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+qqline(res3_t_3,col = "black")
+plot
+```
+
+```{r}
+model1 <- lm(cnt~temp, data=datasetBike)
+res <- resid(model1)
+plot(fitted(model1), res,
+     xlab = "Temperature",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Temperature")
+abline(0,0)
+
+model2 <- lm(cnt~atemp, data=datasetBike)
+res2 <- resid(model2)
+plot(fitted(model2), res2,
+     xlab = "Feeling Temperature",
+     ylab = "Number of Bikes Rented",
+     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Feeling Temperature")
+abline(0,0)
+
+tq1 <- qnorm(ppoints(length(res)))
+qqplot(tq1, res, main = "Normal Q-Q Plot", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+qqline(res,col = "black")
+plot
+
+tq2 <- qnorm(ppoints(length(res2)))
+qqplot(tq2, res2, main = "Normal Q-Q Plot", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+qqline(res2,col = "black")
+plot
+```
