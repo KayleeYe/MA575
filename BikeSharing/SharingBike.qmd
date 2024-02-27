@@ -215,7 +215,7 @@ combinedData <- rbind(subset1, subset2)
 plot(combinedData$instant, combinedData$cnt,  # Adjust 'cnt' if it's in a different data structure
      xlab = "Instant",
      ylab = "Number of Bikes Rented",
-     main = "Scatter Plot of Number of Bikes Rented vs. Instant",
+     main = "Scatter Plot for # of Bikes Rented in Spring & Summer vs. Instant",
      pch = 19)  # pch = 19 makes the points solid circles for better visibility
 ```
 
