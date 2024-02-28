@@ -300,7 +300,7 @@ res <- resid(model1)
 plot(fitted(model1), res,
      xlab = "Temperature",
      ylab = "Number of Bikes Rented",
-     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Temperature")
+     main = "Residuals vs. Fitted Values Plot for Temperature")
 abline(0,0)
 
 model2 <- lm(cnt~atemp, data=datasetBike)
@@ -308,7 +308,7 @@ res2 <- resid(model2)
 plot(fitted(model2), res2,
      xlab = "Feeling Temperature",
      ylab = "Number of Bikes Rented",
-     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Feeling Temperature")
+     main = "Residuals vs. Fitted Values Plot for Feeling Temperature")
 abline(0,0)
 
 model3 <- lm(cnt~wind, data=datasetBike)
@@ -316,7 +316,7 @@ res3 <- resid(model3)
 plot(fitted(model3), res3,
      xlab = "Wind Speed",
      ylab = "Number of Bikes Rented",
-     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Wind Speed")
+     main = "Residuals vs. Fitted Values Plot for Wind Speed")
 abline(0,0)
 
 model4 <- lm(cnt~hum, data=datasetBike)
@@ -324,7 +324,7 @@ res4 <- resid(model4)
 plot(fitted(model4), res4,
      xlab = "Humidity",
      ylab = "Number of Bikes Rented",
-     main = "Residuals vs. Fitted Values Plot for Linear Regression of Bike Count on Humidity")
+     main = "Residuals vs. Fitted Values Plot for Humidity")
 abline(0,0)
 
 library(car)
@@ -374,7 +374,7 @@ qqline(res_hum)
 
 #wind
 res_wind <- resid(model_wind)
-plot(fitted(model_wind), res_wind, main="Fitted vs Residuals Plot for Wind", xlab="Fitted Values", ylab="Residuals")
+plot(fitted(model_wind), res_wind, main="Fitted vs Residuals Plot for Wind Speed", xlab="Fitted Values", ylab="Residuals")
 abline(0,0)
 qqnorm(res_wind, main = "Q-Q Plot of Residuals for Wind Speed vs. # of Bikes Rented")
 qqline(res_wind) 
