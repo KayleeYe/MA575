@@ -1,6 +1,6 @@
 ---
 title: 'Bike Sharing'
-author: "Coders"
+author: "MA575 Group1"
 date: "Sunday, February 11, 2024"
 output:
   html_document:
