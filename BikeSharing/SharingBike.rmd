@@ -470,3 +470,136 @@ qqplot(tq2, res2, main = "Normal Q-Q Plot", xlab = "Theoretical Quantiles", ylab
 qqline(res2,col = "black")
 plot
 ```
+
+## Scatter Plots after some Transformations, Plots for Cook's Distance, Standardized Residuals
+
+```{r}
+#transforming humidity
+  #scatterplot with box plot and line of best fit
+  scatterplot(cnt~hum, data=datasetBike,
+              xlab = "Humidity",
+              ylab = "Number of Bikes Rented",
+              main ="Humidity on number of bikes rented in entire study")
+ 
+  
+  #creating natural log of count variable and running a scatterplot
+  #datasetBike$ln_hum <- log(datasetBike$hum)
+  #scatterplot(cnt~ln_hum , data=datasetBike,
+  #            xlab = "Natural log of humidity",
+  #            ylab = "Number of Bikes Rented",
+  #            main ="Natural log of humidity on number of bikes rented in entire study")
+  #LOG TRANSFORM WONT WORK BECAUSE THERE ARE ZERO VALUES FOR HUMIDITY
+  
+  #trying a square root
+  datasetBike$sqrt_hum <- sqrt(datasetBike $hum)
+  scatterplot(cnt~sqrt_hum , data=datasetBike,
+              xlab = "Square root of humidity",
+              ylab = "Number of Bikes Rented",
+              main ="Square root of humidity on number of bikes rented")
+ 
+  #trying a square
+  datasetBike$sq_hum <- datasetBike$hum ^ 2
+  scatterplot(cnt~sq_hum , data=datasetBike,
+              xlab = "Squared humidity",
+              ylab = "Number of Bikes Rented",
+              main ="Squared humidity on number of bikes rented")
+ 
+# Fit a linear regression model of covariate on number of bikes rented
+  #windspeed
+  lm_wind<- lm(cnt ~ windspeed, data=datasetBike)
+  summary(lm_wind)
+ 
+  #humiditiy
+  lm_hum<- lm(cnt ~ hum, data=datasetBike)
+  summary(lm_hum)
+ 
+  #temp
+  lm_temp<- lm(cnt ~ temp, data=datasetBike)
+  summary(lm_temp)
+ 
+  #feeling temp
+  lm_atemp<- lm(cnt ~ atemp, data=datasetBike)
+  summary(lm_atemp)
+ 
+# Calculate Cook's distance
+  cooksd_wind <- cooks.distance(lm_wind)
+  cooksd_hum <- cooks.distance(lm_hum)
+  cooksd_temp<- cooks.distance(lm_temp)
+  cooksd_atemp <- cooks.distance(lm_atemp)
+ 
+# Print Cook's distances for each observation
+  print(cooksd_wind)
+  print(cooksd_hum)
+  print(cooksd_temp)
+  print(cooksd_atemp)
+ 
+# Plot Cook's distances (influence points)
+ 
+  #wind speed
+  plot(cooksd_wind, pch=19, cex=1, main="Cook's distance plot for windspeed", xlab="Day", ylab="Cook's distance")
+  # Add a horizontal line at the threshold value for identifying influential points
+  abline(h = 4/length(cooksd_wind), col="red")
+ 
+  #humidity
+  plot(cooksd_hum, pch=19, cex=1, main="Cook's distance plot for humidity", xlab="Day", ylab="Cook's distance")
+  abline(h = 4/length(cooksd_hum), col="red")
+ 
+  #temp
+  plot(cooksd_temp, pch=19, cex=1, main="Cook's distance plot for Temperature", xlab="Day", ylab="Cook's distance")
+  abline(h = 4/length(cooksd_temp), col="red")
+ 
+  #feeling temp
+  plot(cooksd_atemp, pch=19, cex=1, main="Cook's distance plot for Feeling Temperature", xlab="Day", ylab="Cook's distance")
+  abline(h = 4/length(cooksd_atemp), col="red")
+ 
+#Plot fitted values vs standardized residuals (outliers)
+  # Extract standardized residuals from the model
+  sr_wind <- rstandard(lm_wind)
+  sr_hum <- rstandard(lm_hum)
+  sr_temp <- rstandard(lm_temp)
+  sr_atemp <- rstandard(lm_atemp)
+ 
+  # Extract fitted values from the model
+  fv_wind <- fitted(lm_wind)
+  fv_hum <- fitted(lm_hum)
+  fv_temp <- fitted(lm_temp)
+  fv_atemp <- fitted(lm_atemp)
+ 
+  # Plot standardized residuals
+ 
+  #wind speed
+  plot(fv_wind,sr_wind, pch = 19, cex = 1, main = "Standardized Residuals Plot for Wind Speed",
+       xlab = "Fitted value", ylab = "Standardized Residuals")
+    # Add horizontal lines at y = 2 and y = -2
+    abline(h = c(2, -2), col = "blue", lty = 2)
+    # Add a horizontal line at y = 0 for reference
+    abline(h = 0, col = "red")
+ 
+  #humidity
+  plot(fv_hum,sr_hum, pch = 19, cex = 1, main = "Standardized Residuals Plot for Humidity",
+       xlab = "Fitted value", ylab = "Standardized Residuals")
+  abline(h = c(2, -2), col = "blue", lty = 2)
+  abline(h = 0, col = "red")
+ 
+  #temp
+  plot(fv_temp,sr_temp, pch = 19, cex = 1, main = "Standardized Residuals Plot for Temperature",
+       xlab = "Fitted value", ylab = "Standardized Residuals")
+  abline(h = c(2, -2), col = "blue", lty = 2)
+  abline(h = 0, col = "red")
+ 
+  #feeling temp
+  plot(fv_atemp,sr_atemp, pch = 19, cex = 1, main = "Standardized Residuals Plot for Feeling Temperature",
+       xlab = "Fitted value", ylab = "Standardized Residuals")
+  abline(h = c(2, -2), col = "blue", lty = 2)
+  abline(h = 0, col = "red")
+ 
+#creating scatter plot with our regression line over it
+ 
+  scatterplot(cnt ~ temp, data = datasetBike,
+              xlab = "Temperature",
+              ylab = "Number of Bikes Rented",
+              main = "Scatter plot with Regression Line")
+  abline(lm_temp, col = "red", lwd = 2)
+
+
+```
