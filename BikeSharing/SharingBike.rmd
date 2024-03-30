@@ -603,3 +603,255 @@ plot
 
 
 ```
+
+## Report 3
+
+## Descriptive Stats
+
+```{r}
+datasetBike
+#For Casual Users
+hist(casual, main = "Histogram of Number of Casual Users", xlab= "number casual users")
+hist(sqrt(casual), main = "Histogram of SquareRoot of Number of Casual Users", xlab= "number casual users")
+
+#For registered users
+hist(registered, main = "Histogram of Number of Registered Users", xlab= "number registered users")
+#hist(sqrt(registered), main = "Histogram of SquareRoot of Number of Casual Users", xlab= "number casual users")
+
+#For WorkingDay
+table(workingday)
+  #the proportions of workingday
+prop.table(table(workingday))
+
+#For Season
+table(season)
+prop.table(table(season))
+
+#For Year
+table(yr)
+prop.table(table(yr))
+
+#For Holiday
+table(holiday)
+prop.table(table(holiday))
+
+#For Weathersit
+table(weather)
+prop.table(table(weather))
+#For normalized temperature(continuous)
+```
+
+## Correlation Matrix
+
+```{r}
+install.packages("GGally")
+
+# Load the GGally package
+
+```
+
+```{r}
+library(GGally)
+# Creating a new var, which is the log of casual users bc the dist'n is skewed
+datasetBike$ln_casual <- log(casual)
+datasetBike$sq_casual <- (casual^2)
+datasetBike$sqrt_casual <- sqrt(casual)
+
+#correlation matrix-temp
+plot<-ggpairs(datasetBike[c('season', 'yr','mnth','weathersit','temp','atemp','windspeed','hum','casual', 'registered' ,'cnt')], 
+        progress = F, 
+        lower = list(continuous = wrap("points", alpha = 0.3, size=0.1)))+ 
+  theme_grey(base_size = 5.6) + 
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0.5))
+plot
+
+
+```
+
+```{r}
+#correlation matrix-not temp
+plot2<-ggpairs(datasetBike[c('yr','mnth','holiday','weekday','workingday','casual', 'registered' ,'cnt')], 
+              progress = F, 
+              lower = list(continuous = wrap("points", alpha = 0.3, size=0.1)))+
+  theme_grey(base_size = 5.6) + 
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0.5))
+print(plot2)
+```
+
+```{r}
+#correlation matrix-temp with sqrt_causal 
+plot3<-ggpairs(datasetBike[c('season', 'yr','mnth','weathersit','temp','atemp','windspeed','hum','sqrt_casual', 'registered' ,'cnt')], 
+              progress = F, 
+              lower = list(continuous = wrap("points", alpha = 0.3, size=0.1)))+ 
+  theme_grey(base_size = 5.6) + 
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0.5))
+print(plot3)
+```
+
+```{r}
+#correlation matrix-not temp with sqrt_causal 
+plot4<-ggpairs(datasetBike[c('yr','mnth','holiday','weekday','workingday','sqrt_casual', 'registered' ,'cnt')], 
+               progress = F, 
+               lower = list(continuous = wrap("points", alpha = 0.3, size=0.1)))+
+  theme_grey(base_size = 5.6) + 
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0.5))
+print(plot4)
+```
+
+```{r}
+install.packages("car")
+
+library(car)
+library(ggplot2)
+```
+
+```{r}
+###SCATTER PLOTS FOR OUTCOME VAR
+#scatterplot with box plot and line of best fit
+scatterplot(cnt~instant, data=datasetBike,
+            xlab = "Day", 
+            ylab = "Number of Bikes Rented",
+            main ="Day on number of bikes rented")
+scatterplot(casual~instant, data=datasetBike,
+            xlab = "Day", 
+            ylab = "Number of casual users",
+            main ="Day on number of casual users")
+scatterplot(registered~instant, data=datasetBike,
+            xlab = "Day", 
+            ylab = "Number of registered users",
+            main ="Day on number of registered users")
+```
+
+## Models for Answering Questions in Report 3
+
+```{r}
+#Q1 scatterplot, version 1 code
+scatterplot(registered~as.factor(workingday), data = datasetBike,
+            xlab = "Workingday",
+            ylab = "Number of Bikes Rented",
+            main = "Scatter plot with Regression Line")
+abline(model1, col = "red", lwd = 2)
+
+#Q1 scatterplot, version 2 code
+new_data$predicted_registered <- predict(model1, newdata = new_data)
+ggplot(new_data, aes(x = workingday, y = predicted_registered, fill = weather)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~yr) +
+  labs(x = "Working Day", y = "Predicted Number of Bikes Registered", title = "Predicted Bike Registrations") +
+  theme_minimal()
+
+new_data <- expand.grid(
+  workingday = levels(as.factor(workingday)),
+  yr = levels(as.factor(yr)),
+  weather = levels(as.factor(weather))
+)
+new_data$predicted_registered <- predict(model1, newdata = new_data)
+ggplot(new_data, aes(x = interaction(workingday, yr), y = predicted_registered, fill = weather)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(x = "Working Day and Year", y = "Predicted Number of Bikes Registered", 
+       title = "Predicted Bike Registrations by Working Day and Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x labels for clarity
+```
+
+```{r}
+#Q1
+new_data <- expand.grid(
+  workingday = levels(as.factor(workingday)),
+  yr = levels(as.factor(yr)),
+  weather = levels(as.factor(weather))
+)
+new_data$predicted_registered <- predict(model1, newdata = new_data)
+ggplot(new_data, aes(x = workingday, y = predicted_registered, fill = weather)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~yr) +
+  labs(x = "Working Day", y = "Predicted Number of Registered Users", title = "Predicted Number of Registered Users") +
+  theme_minimal()
+
+#Q2
+new_data <- expand.grid(
+  season = levels(as.factor(season)),
+  yr = levels(as.factor(yr)),
+  weather = levels(as.factor(weather)),
+  workingday = levels(as.factor(workingday))
+)
+new_data$predicted_sqrt_casual <- predict(model2, newdata = new_data)
+ggplot(new_data, aes(x = season, y = predicted_sqrt_casual, fill = weather)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_grid(yr ~ workingday) +
+  labs(x = "Season", y = "Square Root Predicted Number of Casual Users", title = "Square Root Predicted Number of Casual Users") +
+  theme_minimal()
+
+#Q3
+#temperature
+scatterplot(cnt~temp, data = datasetBike,
+            xlab = "Temperature",
+            ylab = "#Total Users",
+            main = "Scatter plot with Regression Line")
+abline(model3, col = "red", lwd = 2)
+#windspeed
+scatterplot(cnt~wind, data = datasetBike,
+            xlab = "Windspeed",
+            ylab = "#Total Users",
+            main = "Scatter plot with Regression Line")
+abline(model3, col = "red", lwd = 2)
+#humidity
+scatterplot(cnt~hum, data = datasetBike,
+            xlab = "Humidity",
+            ylab = "#Total Users",
+            main = "Scatter plot with Regression Line")
+abline(model3, col = "red", lwd = 2)
+```
+
+```{r}
+#access R libraries needed
+library(ggplot2)
+library(readxl)
+library(car)
+library(GGally)
+library(dplyr)
+
+#Q1 How does workingday affect the number of registered users? 
+model1 <- lm(registered~as.factor(workingday) + as.factor(yr) + as.factor(weather))
+summary(model1)
+sr_1 <- rstandard(model1)
+fv_1 <- fitted(model1)
+plot(fv_1,sr_1, pch = 19, cex = 1, main = "Standardized Residuals Plot for Registered Users",
+     xlab = "Fitted value", ylab = "Standardized Residuals")
+abline(h = c(2, -2), col = "blue", lty = 2)
+abline(h = 0, col = "red")
+qqnorm(sr_1, main = "Q-Q Plot of Residuals")
+qqline(sr_1)
+
+#Q2 How does season affect the number of casual users?
+model2 <- lm(sqrt(casual)~as.factor(season) + as.factor(yr) + as.factor(weather) + as.factor(workingday))
+summary(model2)
+sr_2 <- rstandard(model2)
+fv_2 <- fitted(model2)
+plot(fv_2,sr_2, pch = 19, cex = 1, main = "Standardized Residuals Plot for Square Root Casual Users",
+     xlab = "Fitted value", ylab = "Standardized Residuals")
+abline(h = c(2, -2), col = "blue", lty = 2)
+abline(h = 0, col = "red")
+qqnorm(sr_2, main = "Q-Q Plot of Residuals")
+qqline(sr_2) 
+
+#Q3 Is weather correlated to the number of bike rentals?
+model3 <- lm(cnt ~  temp + wind + hum + as.factor(yr) + as.factor(workingday))
+summary(model3)
+sr_3 <- rstandard(model3)
+fv_3 <- fitted(model3)
+plot(fv_3,sr_3, pch = 19, cex = 1, main = "Standardized Residuals Plot for #Total Users",
+     xlab = "Fitted value", ylab = "Standardized Residuals")
+abline(h = c(2, -2), col = "blue", lty = 2)
+abline(h = 0, col = "red")
+qqnorm(sr_3, main = "Q-Q Plot of Residuals")
+qqline(sr_3)
+```
