@@ -131,13 +131,13 @@ We are fitting full model which will be used to stepwise regression later. We ad
 ```{r}
 
 
-full_model1 <- lm(registered ~ workingday + weathersit,
+full_model1 <- lm(registered ~ as.factor(workingday) + as.factor(season)+ holiday + weekday + temp + hum + windspeed + as.factor(weathersit),
                  data = training_data)
 
-full_model2 <- lm( sqrt(casual)~ workingday + season + weathersit,
+full_model2 <- lm( sqrt(casual)~ as.factor(workingday) + as.factor(season) + holiday + weekday + temp + hum + windspeed + as.factor(weathersit),
                  data = training_data)
 
-full_model3 <- lm( cnt ~ workingday+ temp + hum + windspeed + weathersit,
+full_model3 <- lm( cnt ~ casual +as.factor(workingday) + as.factor(season) + holiday + weekday + temp + hum + windspeed + as.factor(weathersit),
                  data = training_data)
 
 summary(full_model1)
