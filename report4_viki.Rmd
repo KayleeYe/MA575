@@ -1,0 +1,277 @@
+---
+title: "report4"
+author: "Viktoria Zruttova"
+date: "2024-04-07"
+output: html_document
+---
+```{r}
+library(car)
+library(caret)
+library(ggplot2)
+library(dplyr)
+library(GGally)
+library(readxl)
+library(MLmetrics)
+```
+
+
+```{r}
+#load the dataset
+mydata <- read.csv('./data/day.csv')
+
+```
+
+```{r}
+#convert 'dteday' column to Date format
+mydata$dteday <- as.Date(mydata$dteday)
+
+#season
+mydata$season <- cut(mydata$season,
+                     breaks = c(0.5, 1.5, 2.5, 3.5, 4.5),
+                     labels = c("Winter", "Spring", "Summer", "Fall"))
+mydata$season <- factor(mydata$season, levels = c("Winter", "Spring", "Summer", "Fall"))
+
+#workingday
+mydata$workingday <- ifelse(mydata$workingday == 0, "Not_Workingday", "Workingday")
+mydata$workingday <- factor(mydata$workingday, levels = c("Not_Workingday", "Workingday"))
+
+#weather
+mydata$weathersit <- cut(mydata$weathersit,
+                         breaks = c(0.5, 1.5, 2.5, 3.5, 4.5),
+                         labels = c("Weather_1", "Weather_2", "Weather_3", "Weather_4"))
+mydata$weathersit <- factor(mydata$weathersit, levels = c("Weather_1", "Weather_2", "Weather_3", "Weather_4"))
+
+head(mydata)
+```
+
+
+```{r}
+
+
+
+#split the dataset into training and validation sets
+training_data <- mydata[mydata$yr == 0, ]
+validation_data <- mydata[mydata$yr == 1, ]
+
+
+```
+
+
+
+
+
+```{r}
+# Set a seed for reproducibility
+# Setting a seed is crucial for reproducibility and consistency of results.
+# It ensures that when you run the same code multiple times, you'll ...
+# ... obtain the same results.
+set.seed(20231103)
+
+# Filter dataset for year 2011 (0) and year 2012 (1)
+year2011 <- mydata[mydata$yr == 0, ]
+year2012 <- mydata[mydata$yr == 1, ]
+
+# Add 'Type' column and assign values
+year2011$Type <- "Training"
+year2012$Type <- "Validation"
+
+# Combine training and validation data
+mydata <- rbind(year2011, year2012)
+
+```
+
+## Boxplots for proposed covariates y
+
+We choose 3 questions of interest:
+
+1. **How does working day affect the number of registered users?** where Y is the numnber of registered users
+2. **How does season affect the number of casual users?** where Y is the sqrt(casual users)
+3. **Is weather correlated to the number of bike rentals?* ** where Y is the count of bikes rented 
+
+### NOTE - we probably need to do stratified sampling as in lab 9 comment, since we do not have equal representation in both training and validation datasets. We should address this issue - look into this further.
+
+```{r}
+#cnt
+ggplot(mydata, aes(x = Type, y = cnt, color = Type)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  labs(x = "Type", y = "# Total Users") +
+  scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
+  ggtitle("# Total Users by Type (Training vs. Validation)") +
+  theme_bw()
+
+#registered
+ggplot(mydata, aes(x = Type, y = registered, color = Type)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  labs(x = "Type", y = "# Registered Users") +
+  scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
+  ggtitle("# Registered Users by Type (Training vs. Validation)") +
+  theme_bw()
+
+#sqrt(casual)
+ggplot(mydata, aes(x = Type, y = sqrt(casual), color = Type)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  labs(x = "Type", y = "Square Root # Casual Users") +
+  scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
+  ggtitle("Square Root # Casual Users by Type (Training vs. Validation)") +
+  theme_bw()
+
+```
+
+```{r}
+#creating training data our of mydata (training -> data from 2011)
+training_data <- subset(mydata, Type == "Training")
+summary(training_data)
+```
+
+## Full models for each question
+We are fitting full model which will be used to stepwise regression later. We address multicollinearity issue and delete variables that might cause it.
+
+### Note: I am not sure which of the variables should be deleted and which should be kept in the model to make it better.
+
+```{r}
+
+
+full_model1 <- lm(registered ~ workingday + weathersit,
+                 data = training_data)
+
+full_model2 <- lm( sqrt(casual)~ workingday + season + weathersit,
+                 data = training_data)
+
+full_model3 <- lm( cnt ~ workingday+ temp + hum + windspeed + weathersit,
+                 data = training_data)
+
+summary(full_model1)
+summary(full_model2)
+summary(full_model3)
+
+#plot added variables
+avPlots(full_model1)
+avPlots(full_model2)
+avPlots(full_model3)
+```
+
+
+# Stepwise Regression
+
+```{r}
+stepwise_model1 <- step(full_model1, direction = "both")
+stepwise_model2 <- step(full_model2, direction = "both")
+stepwise_model3 <- step(full_model3, direction = "both")
+```
+
+```{r}
+summary(stepwise_model1)
+summary(stepwise_model2)
+summary(stepwise_model3)
+```
+
+```{r}
+avPlots(stepwise_model1)
+avPlots(stepwise_model2)
+avPlots(stepwise_model3)
+```
+
+For vif, values close to 1 indicate no multicollinearity, values between 1-2 indicate mild collinearity which is not ideal but can be considered ok since it won't severaly impact the interpretability of the coefficients, values aboved 2 indicate severe multicollinearity which is considered unreliable.
+
+```{r}
+vif(stepwise_model1)
+vif(stepwise_model2)
+vif(stepwise_model3)
+```
+
+## Diagnostics
+
+```{r}
+# Create a data frame with the residuals and fitted values
+
+```
+
+
+### Prediction
+
+
+```{r}
+validation_data$predicted_registered <- predict(stepwise_model1, newdata = validation_data)
+validation_data$predicted_sqrtcasual <- predict(stepwise_model2, newdata = validation_data)
+validation_data$predicted_count <- predict(stepwise_model3, newdata = validation_data)
+```
+
+
+### Note: here in the predicitons I am unsure why the firts one is negative, in thesecond quetsion, I am unsure whether I should square the original value or not (not sure wthere it predicts the squared casaul count or not). In the third question, it produces Nans???
+
+```{r}
+observed_values1 <- validation_data$registered
+predicted_values1 <- validation_data$predicted_registered
+# Calculate different prediction performance metrics
+# Functions from the MLmetrics package
+# Common regression metrics
+# Calculate the Root Mean Squared Error (RMSE), which measures the ...
+# ... average magnitude of prediction errors.
+# Lower is better.
+rmse1 <- RMSE(predicted_values1, observed_values1)
+# same as
+# sqrt(mean((observed_values - predicted_values)^2))
+
+# Compute the Mean Absolute Error (MAE), indicating the average absolute ...
+# ... difference between predicted and observed values.
+# Lower is better.
+mae1 <- MAE(predicted_values1, observed_values1)
+# same as
+# mean(abs(observed_values - predicted_values))
+
+# Calculate the Mean Absolute Percentage Error (MAPE), measuring the ...
+# ... average percentage difference between predicted and observed values.
+mape1 <- MAPE(predicted_values1, observed_values1)
+# same as
+# mean(abs(predicted_values-observed_values)/observed_values)
+
+# Determine the R-squared (R²) Score, representing the proportion of the ...
+# ... variance in the observed values (of validation data set) ... 
+# ... explained by the predicted values from the model.
+# Higher is better.
+r_squared1 <- R2_Score(predicted_values1, observed_values1)
+# same as
+# summary(lm(observed_values ~ predicted_values))$r.squared
+
+# Display the calculated metrics
+cat("Root Mean Squared Error (RMSE):", round(rmse1, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae1, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared1, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape1, digits = 4), "\n")
+
+
+
+#second question
+
+observed_values2 <- sqrt(validation_data$casual) #should I transform it here??
+predicted_values2 <- validation_data$predicted_sqrtcasual
+rmse2 <- RMSE(predicted_values2, observed_values2)
+mae2 <- MAE(predicted_values2, observed_values2)
+mape2 <- MAPE(predicted_values2, observed_values2)
+r_squared2 <- R2_Score(predicted_values2, observed_values2)
+cat("Root Mean Squared Error (RMSE):", round(rmse2, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae2, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared2, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape2, digits = 4), "\n")
+
+
+
+#third question
+observed_values3 <- validation_data$count
+predicted_values3 <- validation_data$predicted_count
+rmse3 <- RMSE(predicted_values3, observed_values3)
+mae3 <- MAE(predicted_values3, observed_values3)
+mape3 <- MAPE(predicted_values3, observed_values3)
+r_squared3 <- R2_Score(predicted_values3, observed_values3)
+cat("Root Mean Squared Error (RMSE):", round(rmse3, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae3, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared3, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
+
+
+```
+
+```{r}
+
+```
+
