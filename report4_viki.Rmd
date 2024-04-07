@@ -44,16 +44,12 @@ mydata$weathersit <- factor(mydata$weathersit, levels = c("Weather_1", "Weather_
 head(mydata)
 ```
 
+We are splitting the dataset in 2 parts, first part is training set which is done at year 2011, the second- validation part is done at year 2012.
 
 ```{r}
-
-
-
 #split the dataset into training and validation sets
 training_data <- mydata[mydata$yr == 0, ]
 validation_data <- mydata[mydata$yr == 1, ]
-
-
 ```
 
 
@@ -66,7 +62,6 @@ validation_data <- mydata[mydata$yr == 1, ]
 # It ensures that when you run the same code multiple times, you'll ...
 # ... obtain the same results.
 set.seed(20231103)
-
 # Filter dataset for year 2011 (0) and year 2012 (1)
 year2011 <- mydata[mydata$yr == 0, ]
 year2012 <- mydata[mydata$yr == 1, ]
@@ -91,13 +86,6 @@ We choose 3 questions of interest:
 ### NOTE - we probably need to do stratified sampling as in lab 9 comment, since we do not have equal representation in both training and validation datasets. We should address this issue - look into this further.
 
 ```{r}
-#cnt
-ggplot(mydata, aes(x = Type, y = cnt, color = Type)) +
-  geom_boxplot(position = position_dodge(width = 0.8)) +
-  labs(x = "Type", y = "# Total Users") +
-  scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
-  ggtitle("# Total Users by Type (Training vs. Validation)") +
-  theme_bw()
 
 #registered
 ggplot(mydata, aes(x = Type, y = registered, color = Type)) +
@@ -113,6 +101,14 @@ ggplot(mydata, aes(x = Type, y = sqrt(casual), color = Type)) +
   labs(x = "Type", y = "Square Root # Casual Users") +
   scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
   ggtitle("Square Root # Casual Users by Type (Training vs. Validation)") +
+  theme_bw()
+
+#cnt
+ggplot(mydata, aes(x = Type, y = cnt, color = Type)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  labs(x = "Type", y = "# Total Users") +
+  scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
+  ggtitle("# Total Users by Type (Training vs. Validation)") +
   theme_bw()
 
 ```
@@ -178,14 +174,6 @@ vif(stepwise_model1)
 vif(stepwise_model2)
 vif(stepwise_model3)
 ```
-
-## Diagnostics
-
-```{r}
-# Create a data frame with the residuals and fitted values
-
-```
-
 
 ### Prediction
 
@@ -270,6 +258,9 @@ cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
 
 
 ```
+
+
+## Diagnostics
 
 ```{r}
 
