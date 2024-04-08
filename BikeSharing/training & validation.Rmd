@@ -1,0 +1,372 @@
+---
+title: "training & validation"
+author: "Kaylee Ye"
+date: "2024-04-07"
+output: html_document
+---
+
+```{r}
+mydata <- read.csv("../data/dayDataForReport4.csv")
+library(car)
+library(caret)
+library(ggplot2)
+library(MLmetrics)
+library(dplyr)
+library(GGally)
+library(olsrr)
+library(MASS)
+```
+
+#We create new variables for 'Season',"Workingday" and 'Weather' based on the 'Season', "Workingday" and 'Weather' columns.
+
+```{r}
+#season
+mydata$season <- cut(mydata$season,
+                     breaks = c(0.5, 1.5, 2.5, 3.5, 4.5),
+                     labels = c("Winter", "Spring", "Summer", "Fall"))
+mydata$season <- factor(mydata$season, levels = c("Winter", "Spring", "Summer", "Fall"))
+
+#workingday
+mydata$workingday <- ifelse(mydata$workingday == 0, "Not_Workingday", "Workingday")
+mydata$workingday <- factor(mydata$workingday, levels = c("Not_Workingday", "Workingday"))
+
+#weather
+mydata$weathersit <- cut(mydata$weathersit,
+                         breaks = c(0.5, 1.5, 2.5, 3.5, 4.5),
+                         labels = c("Weather_1", "Weather_2", "Weather_3", "Weather_4"))
+mydata$weathersit <- factor(mydata$weathersit, levels = c("Weather_1", "Weather_2", "Weather_3", "Weather_4"))
+```
+
+# Data Splitting (Training & Validation): We split the data into training (year = 2011) and validation sets (year = 2012)
+
+```{r}
+# Assuming 'yr' is the column in 'mydata' indicating the year
+# Initialize 'Type' column to NA
+mydata$Type <- NA
+
+mydata$Type[mydata$yr == 0] <- "Training"
+
+# Assign 'Validation' to rows where 'yr' is not 0
+mydata$Type[mydata$yr != 0] <- "Validation"
+
+# Identify indices for training (year 2011)
+#index <- mydata$yr == 0
+
+# Assign 'Training' to rows where 'yr' is 2011, 'Validation' otherwise
+#mydata$Type[index] <- "Training"
+#mydata$Type[-index] <- "Validation"  # '!' is used to negate the index, for years not equal to 2011
+
+# Now, you can split the data based on the 'Type' column
+training_set <- mydata[mydata$Type == "Training", ]
+validation_set <- mydata[mydata$Type == "Validation", ]
+```
+
+```{r}
+table(mydata$season, mydata$Type)
+table(mydata$workingday, mydata$Type)
+table(mydata$weathersit, mydata$Type)
+#table(mydata$cnt, mydata$Type)
+```
+
+## Comparison Training & Validation Data Sets
+
+# Comparison Training & Validation Data Sets
+
+### Y values for all three models: cnt, registered and sqrt(casual) users
+
+### Boxplots
+
+```{r}
+#cnt
+ggplot(mydata, aes(x = Type, y = cnt, color = Type)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  labs(x = "Type", y = "# Bikes Rented") +
+  scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
+  ggtitle("# Bikes Rented by Type (Training vs. Validation)") +
+  theme_bw()
+#registered
+ggplot(mydata, aes(x = Type, y = registered, color = Type)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  labs(x = "Type", y = "# Registered Users") +
+  scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
+  ggtitle("# Registered Users by Type (Training vs. Validation)") +
+  theme_bw()
+#sqrt(casual)
+ggplot(mydata, aes(x = Type, y = sqrt(casual), color = Type)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  labs(x = "Type", y = "Square Root # Casual Users") +
+  scale_fill_manual(name = "Dataset Type", values = c("Training" = "blue", "Validation" = "red")) +
+  ggtitle("Square Root # Casual Users by Type (Training vs. Validation)") +
+  theme_bw()
+```
+
+#### Histograms and Summary
+
+```{r}
+# Open a plotting window with 1 row and 2 columns
+par(mfrow = c(1, 2))
+hist(training_set$cnt, main = "Training Set Histogram", xlab = "# bikes rented", col = "blue")
+hist(validation_set$cnt, main = "Validation Set Histogram", xlab = "# bikes rented", col = "red")
+par(mfrow = c(1, 1))
+```
+
+The Histogram shows that the distribution of cnt in training dataset shows a bimodal shape which has two peaks, while the validation shows left skewed with only one peak.
+
+```{r}
+#for registered
+par(mfrow = c(1, 2))
+hist(training_set$registered, main = "Training Set Histogram", xlab = "registered users", col = "blue")
+hist(validation_set$registered, main = "Validation Set Histogram", xlab = "registered users", col = "red")
+par(mfrow = c(1, 1))
+
+#for casual
+par(mfrow = c(1, 2))
+training_set$sqrt_casual <- sqrt(training_set$casual)
+validation_set$sqrt_casual <- sqrt(validation_set$casual)
+hist(training_set$sqrt_casual, main = "Training Set Histogram", xlab = "sqrt casual users", col = "blue")
+hist(validation_set$sqrt_casual, main = "Validation Set Histogram", xlab = "sqrt casual users", col = "red")
+par(mfrow = c(1, 1))
+```
+
+The histograms for registered users are similarly normally distributed, and both are slightly right skewed. The histogram of sqrt casual users for each data set shows similarity.
+
+## X values: categorical: [yr(?), weather, season, workingday] continuous: [temp, wind, hum]
+
+#### For categorical
+
+```{r}
+#model1 <- lm(registered~as.factor(workingday) + as.factor(yr) + as.factor(weather))
+#model2 <- lm(sqrt(casual)~as.factor(season) + as.factor(yr) + as.factor(weather) + as.factor(workingday))
+#model3 <- lm(cnt ~  temp + wind + hum + as.factor(yr) + as.factor(workingday))
+
+# Assuming 'training_set' and 'validation_set' are your datasets
+
+# WorkingDay
+training_counts_workingday <- table(training_set$workingday)
+validation_counts_workingday <- table(validation_set$workingday)
+
+training_props_workingday <- prop.table(training_counts_workingday)
+validation_props_workingday <- prop.table(validation_counts_workingday)
+
+# Season
+training_counts_season <- table(training_set$season)
+validation_counts_season <- table(validation_set$season)
+
+training_props_season <- prop.table(training_counts_season)
+validation_props_season <- prop.table(validation_counts_season)
+
+# Year
+training_counts_yr <- table(training_set$yr)
+validation_counts_yr <- table(validation_set$yr)
+
+training_props_yr <- prop.table(training_counts_yr)
+validation_props_yr <- prop.table(validation_counts_yr)
+
+# Holiday
+training_counts_holiday <- table(training_set$holiday)
+validation_counts_holiday <- table(validation_set$holiday)
+
+training_props_holiday <- prop.table(training_counts_holiday)
+validation_props_holiday <- prop.table(validation_counts_holiday)
+
+# Weathersit
+training_counts_weathersit <- table(training_set$weathersit)
+validation_counts_weathersit <- table(validation_set$weathersit)
+
+training_props_weathersit <- prop.table(training_counts_weathersit)
+validation_props_weathersit <- prop.table(validation_counts_weathersit)
+
+```
+
+```{r}
+# Printing out the tables
+# For a better layout, you might want to print these one by one or use a custom layout with a package like gridExtra
+#working day
+cat("Training Set - Working Day Count and Proportion")
+print(training_counts_workingday)
+print(training_props_workingday)
+
+cat("\nValidation Set - Working Day Count and Proportion")
+print(validation_counts_workingday)
+print(validation_props_workingday)
+cat("\n")
+#season
+cat("Training Set - Season Count and Proportion")
+print(training_counts_season)
+print(training_props_season)
+
+cat("\nValidation Set - Season Count and Proportion")
+print(validation_counts_season)
+print(validation_props_season)
+cat("\n")
+#year
+cat("Training Set - Year Count and Proportion")
+print(training_counts_yr)
+print(training_props_yr)
+
+cat("\nValidation Set - Year Count and Proportion")
+print(validation_counts_yr)
+print(validation_props_yr)
+cat("\n")
+#holiday
+cat("Training Set - Holiday Count and Proportion")
+print(training_counts_holiday)
+print(training_props_holiday)
+
+cat("\nValidation Set - Holiday Count and Proportion")
+print(validation_counts_holiday)
+print(validation_props_holiday)
+cat("\n")
+#weathersit
+cat("Training Set - Weathersit Count and Proportion")
+print(training_counts_weathersit)
+print(training_props_weathersit)
+
+cat("\nValidation Set - Weathersit Count and Proportion")
+print(validation_counts_weathersit)
+print(validation_props_weathersit)
+```
+
+The categorical variables in the two data sets have similar counts and proportions.
+
+#### For continuous
+
+```{r}
+#For temp
+par(mfrow = c(1, 2))
+hist(training_set$temp, main = "Training Set Histogram", xlab = "temperature", col = "blue")
+hist(validation_set$temp, main = "Validation Set Histogram", xlab = "temperature", col = "red")
+par(mfrow = c(1, 1))
+
+#For hum
+par(mfrow = c(1, 2))
+hist(training_set$hum, main = "Training Set Histogram", xlab = "humidity", col = "blue")
+hist(validation_set$hum, main = "Validation Set Histogram", xlab = "humidity", col = "red")
+par(mfrow = c(1, 1))
+
+#For windspeed
+par(mfrow = c(1, 2))
+hist(training_set$windspeed, main = "Training Set Histogram", xlab = "windspeed", col = "blue")
+hist(validation_set$windspeed, main = "Validation Set Histogram", xlab = "windspeed", col = "red")
+par(mfrow = c(1, 1))
+```
+
+All three continuous variables are similarly distributed in the two data sets. In general, the temperature in 2012 is higher than in 2011, and the humidity is relatively lower and more widely spread in 2012 than that in 2011. Also, the wind speed is generally higher in 2012.
+
+# Model Fitting & obtain outputs of the model
+
+```{r}
+#training_data <- subset(mydata, Type == "Training")
+# Fit the three model we derived in report 3:
+#model1
+model1 <- lm(registered~as.factor(workingday) + as.factor(weathersit),data = training_set)
+summary(model1) #adjusted r^2 = 0.1927
+#model2
+model2 <- lm(sqrt(casual)~as.factor(season) + as.factor(weathersit) + as.factor(workingday),data = training_set)
+summary(model2) #adjusted r^2 = 0.6873
+#model3
+model3 <- lm(cnt ~  temp + windspeed + hum + as.factor(workingday),data = training_set)
+summary(model3) #adjusted r^2 = 0.6511
+```
+
+### Models and Questions
+
+1.  How does working day affect the number of registered users? 
+
+    registered users= B0+ B1(workingday) +B2(year)+ B3(weather1vs2) +B4(weather1vs3)+ B5(weather1vs4)
+
+2.  How does season affect the number of casual users?
+
+    sqrt(casual users)= B0+ B1(season1vs2)+ B2(season1vs3)+ B3(season1vs4)+ B4(year)+ B5(weather1vs2) +B6(weather1vs3)+ B7(weather1vs4)+ B8(working day)
+
+3.  Is weather correlated to the number of bike rentals? 
+
+    count of bikes rented =B0+ B1(temperature) +B2(windspeed)+ B3(humidity)+ B4(year) + B5(working day)
+
+```{r}
+# Convert categorical variables to factors
+training_set$workingday <- as.factor(training_set$workingday)
+training_set$season <- as.factor(training_set$season)
+training_set$mnth <- as.factor(training_set$mnth)
+training_set$holiday <- as.factor(training_set$holiday)
+training_set$weekday <- as.factor(training_set$weekday)
+training_set$weathersit <- as.factor(training_set$weathersit)
+training_set$casual <- sqrt(training_set$casual)
+
+empty_model1 <- lm(registered ~ 1, data = training_set)
+full_model1 <- lm(registered ~ workingday + season+ mnth + holiday + weekday + temp + atemp + hum + windspeed + cnt + weathersit + casual,
+                 data = training_set)
+modified_model1 <- lm(registered ~ workingday + weathersit, data = training_set)
+
+
+
+empty_model2 <- lm(casual ~ 1, data = training_set)
+full_model2 <- lm(casual~ workingday +registered + season+ mnth + holiday + weekday + temp + atemp + hum + windspeed + cnt + weathersit,
+                 data = training_set)
+modified_model2 <- lm(casual~ workingday+season+weathersit, data = training_set)
+
+
+
+empty_model3 <- lm(cnt ~ 1, data = training_set)
+full_model3 <- lm( cnt ~ casual +workingday +registered + season+ mnth + holiday + weekday + temp + atemp + hum + windspeed + weathersit,
+                 data = training_set)
+modified_model3 <- lm(cnt~ temp+ windspeed +hum + workingday, data = training_set)
+
+
+```
+
+```{r}
+#full model1: AIC:3752 R-squared: 97% (best)?
+#model1 with only workingday + weathersit get AIC = 5011.11, Adjusted R-squared:  0.1927 though small p value
+#remove windspeed,holiday, weekday, and possible multicolinearity variable atemp, mnth
+#model1 with
+empty_stepwise_model1 <- stepAIC(empty_model1, direction = "both")
+summary(empty_stepwise_model1)
+
+stepwise_model1 <- stepAIC(modified_model1, direction = "both")
+summary(stepwise_model1)
+
+#stepwise_model_reg <- stepAIC(full_model1, direction = "both")
+#summary(stepwise_model_reg)
+```
+
+In model 1, compared to the null model, the AIC lowered from 5086 to 5011 which indicates the potentially better model. However, the R-squared is 19.27% which is very low.
+
+```{r}
+#full model2: Negative AIC: -5415. ???
+#stepwise_model <- stepAIC(full_model2, direction = "both")
+empty_stepwise_model2 <- stepAIC(empty_model2, direction = "both")
+summary(empty_stepwise_model2)
+
+stepwise_model2 <- stepAIC(modified_model2, direction = "both")
+summary(stepwise_model2)
+```
+
+In model 2, compared to the null model, the AIC lowered from 1721 to 1302 which indicates the potentially better model. And the R-squared is 69% which is relatively high.
+
+```{r}
+#full model3: AIC 4010 R^2=97.05%
+#stepwise_model_cnt <- stepAIC(full_model3, direction = "both")
+
+empty_stepwise_model3 <- stepAIC(empty_model3, direction = "both")
+summary(empty_stepwise_model3)
+
+stepwise_model3 <- stepAIC(modified_model3, direction = "both")
+summary(stepwise_model3)
+
+#stepwise_model3 <- stepAIC(modified_model3, direction = "both")
+#summary(stepwise_model_cnt)
+```
+
+In model 3, compared to the null model, the AIC lowered from 5278 to 4895 which indicates the better model. As shown in the result, we should remove the variable of workingday, which gives better fit of model. The R-squared is 65%, and p value is smaller than 0.05.
+
+```{r}
+#avPlots(full_model1)
+#vif(full_model1)
+```
+
+```{r}
+#ols_step_all_possible(full_model1)
+```
+
+# Model Diagnostics (after completing Stepwise regression)

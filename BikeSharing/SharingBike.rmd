@@ -644,7 +644,7 @@ prop.table(table(weather))
 ## Correlation Matrix
 
 ```{r}
-install.packages("GGally")
+#install.packages("GGally")
 
 # Load the GGally package
 
@@ -707,7 +707,7 @@ print(plot4)
 ```
 
 ```{r}
-install.packages("car")
+#install.packages("car")
 
 library(car)
 library(ggplot2)
@@ -733,37 +733,28 @@ scatterplot(registered~instant, data=datasetBike,
 ## Models for Answering Questions in Report 3
 
 ```{r}
-#Q1 scatterplot, version 1 code
-scatterplot(registered~as.factor(workingday), data = datasetBike,
-            xlab = "Workingday",
-            ylab = "Number of Bikes Rented",
-            main = "Scatter plot with Regression Line")
-abline(model1, col = "red", lwd = 2)
+#access R libraries needed
+library(ggplot2)
+library(readxl)
+library(car)
+library(GGally)
+library(dplyr)
 
-#Q1 scatterplot, version 2 code
-new_data$predicted_registered <- predict(model1, newdata = new_data)
-ggplot(new_data, aes(x = workingday, y = predicted_registered, fill = weather)) +
-  geom_bar(stat = "identity", position = position_dodge()) +
-  facet_wrap(~yr) +
-  labs(x = "Working Day", y = "Predicted Number of Bikes Registered", title = "Predicted Bike Registrations") +
-  theme_minimal()
 
-new_data <- expand.grid(
-  workingday = levels(as.factor(workingday)),
-  yr = levels(as.factor(yr)),
-  weather = levels(as.factor(weather))
-)
-new_data$predicted_registered <- predict(model1, newdata = new_data)
-ggplot(new_data, aes(x = interaction(workingday, yr), y = predicted_registered, fill = weather)) +
-  geom_bar(stat = "identity", position = position_dodge()) +
-  labs(x = "Working Day and Year", y = "Predicted Number of Bikes Registered", 
-       title = "Predicted Bike Registrations by Working Day and Year") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x labels for clarity
-```
-
-```{r}
-#Q1
+#Q1 chosen model registered users=B0+B1(workingday)+B2(year)+B3(weather)
+model1 <- lm(registered~as.factor(workingday) + as.factor(yr) + as.factor(weather))
+summary(model1)
+#standardized residuals
+sr_1 <- rstandard(model1)
+fv_1 <- fitted(model1)
+plot(fv_1,sr_1, pch = 19, cex = 1, main = "Standardized Residuals Plot for Registered Users",
+     xlab = "Fitted value", ylab = "Standardized Residuals")
+abline(h = c(2, -2), col = "blue", lty = 2)
+abline(h = 0, col = "red")
+#qq plot
+qqnorm(sr_1, main = "Q-Q Plot of Residuals")
+qqline(sr_1)
+#ggplot of variable of main effects on model 1
 new_data <- expand.grid(
   workingday = levels(as.factor(workingday)),
   yr = levels(as.factor(yr)),
@@ -776,7 +767,20 @@ ggplot(new_data, aes(x = workingday, y = predicted_registered, fill = weather)) 
   labs(x = "Working Day", y = "Predicted Number of Registered Users", title = "Predicted Number of Registered Users") +
   theme_minimal()
 
-#Q2
+#Q2 chosen model sqrt(casual users)= B0+ B1(season)+ B2(year)+ B3(weather)+ B4(working day)
+model2 <- lm(sqrt(casual)~as.factor(season) + as.factor(yr) + as.factor(weather) + as.factor(workingday))
+summary(model2)
+#standardized residuals
+sr_2 <- rstandard(model2)
+fv_2 <- fitted(model2)
+plot(fv_2,sr_2, pch = 19, cex = 1, main = "Standardized Residuals Plot for Square Root Casual Users",
+     xlab = "Fitted value", ylab = "Standardized Residuals")
+abline(h = c(2, -2), col = "blue", lty = 2)
+abline(h = 0, col = "red")
+#qq plot
+qqnorm(sr_2, main = "Q-Q Plot of Residuals")
+qqline(sr_2) 
+#ggplot of variable of main effects on model 2
 new_data <- expand.grid(
   season = levels(as.factor(season)),
   yr = levels(as.factor(yr)),
@@ -790,68 +794,36 @@ ggplot(new_data, aes(x = season, y = predicted_sqrt_casual, fill = weather)) +
   labs(x = "Season", y = "Square Root Predicted Number of Casual Users", title = "Square Root Predicted Number of Casual Users") +
   theme_minimal()
 
-#Q3
-#temperature
-scatterplot(cnt~temp, data = datasetBike,
-            xlab = "Temperature",
-            ylab = "#Total Users",
-            main = "Scatter plot with Regression Line")
-abline(model3, col = "red", lwd = 2)
-#windspeed
-scatterplot(cnt~wind, data = datasetBike,
-            xlab = "Windspeed",
-            ylab = "#Total Users",
-            main = "Scatter plot with Regression Line")
-abline(model3, col = "red", lwd = 2)
-#humidity
-scatterplot(cnt~hum, data = datasetBike,
-            xlab = "Humidity",
-            ylab = "#Total Users",
-            main = "Scatter plot with Regression Line")
-abline(model3, col = "red", lwd = 2)
-```
-
-```{r}
-#access R libraries needed
-library(ggplot2)
-library(readxl)
-library(car)
-library(GGally)
-library(dplyr)
-
-#Q1 How does workingday affect the number of registered users? 
-model1 <- lm(registered~as.factor(workingday) + as.factor(yr) + as.factor(weather))
-summary(model1)
-sr_1 <- rstandard(model1)
-fv_1 <- fitted(model1)
-plot(fv_1,sr_1, pch = 19, cex = 1, main = "Standardized Residuals Plot for Registered Users",
-     xlab = "Fitted value", ylab = "Standardized Residuals")
-abline(h = c(2, -2), col = "blue", lty = 2)
-abline(h = 0, col = "red")
-qqnorm(sr_1, main = "Q-Q Plot of Residuals")
-qqline(sr_1)
-
-#Q2 How does season affect the number of casual users?
-model2 <- lm(sqrt(casual)~as.factor(season) + as.factor(yr) + as.factor(weather) + as.factor(workingday))
-summary(model2)
-sr_2 <- rstandard(model2)
-fv_2 <- fitted(model2)
-plot(fv_2,sr_2, pch = 19, cex = 1, main = "Standardized Residuals Plot for Square Root Casual Users",
-     xlab = "Fitted value", ylab = "Standardized Residuals")
-abline(h = c(2, -2), col = "blue", lty = 2)
-abline(h = 0, col = "red")
-qqnorm(sr_2, main = "Q-Q Plot of Residuals")
-qqline(sr_2) 
-
-#Q3 Is weather correlated to the number of bike rentals?
+#Q3 count of bikes rented =B0+ B1(temperature) +B2(windspeed)+ B3(humidity)+ B4(year) + B5(working day)
 model3 <- lm(cnt ~  temp + wind + hum + as.factor(yr) + as.factor(workingday))
 summary(model3)
+#standardized residuals
 sr_3 <- rstandard(model3)
 fv_3 <- fitted(model3)
 plot(fv_3,sr_3, pch = 19, cex = 1, main = "Standardized Residuals Plot for #Total Users",
      xlab = "Fitted value", ylab = "Standardized Residuals")
 abline(h = c(2, -2), col = "blue", lty = 2)
 abline(h = 0, col = "red")
+#qq plot
 qqnorm(sr_3, main = "Q-Q Plot of Residuals")
 qqline(sr_3)
+#scatterplots: temperature, windspeed, humidity (#1, #2, #3)
+#1
+scatterplot(cnt~temp, data = datasetBike,
+            xlab = "Temperature",
+            ylab = "#Total Users",
+            main = "Scatter plot with Regression Line")
+abline(model3, col = "red", lwd = 2)
+#2
+scatterplot(cnt~wind, data = datasetBike,
+            xlab = "Windspeed",
+            ylab = "#Total Users",
+            main = "Scatter plot with Regression Line")
+abline(model3, col = "red", lwd = 2)
+#3
+scatterplot(cnt~hum, data = datasetBike,
+            xlab = "Humidity",
+            ylab = "#Total Users",
+            main = "Scatter plot with Regression Line")
+abline(model3, col = "red", lwd = 2)
 ```
