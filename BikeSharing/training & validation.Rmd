@@ -365,8 +365,4 @@ In model 3, compared to the null model, the AIC lowered from 5278 to 4895 which 
 #vif(full_model1)
 ```
 
-```{r}
-#ols_step_all_possible(full_model1)
-```
-
 # Model Diagnostics (after completing Stepwise regression)
