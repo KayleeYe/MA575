@@ -44,17 +44,7 @@ mydata$weathersit <- factor(mydata$weathersit, levels = c("Weather_1", "Weather_
 head(mydata)
 ```
 
-We are splitting the dataset in 2 parts, first part is training set which is done at year 2011, the second- validation part is done at year 2012.
-
-```{r}
-#split the dataset into training and validation sets
-training_data <- mydata[mydata$yr == 0, ]
-validation_data <- mydata[mydata$yr == 1, ]
-```
-
-
-
-
+We are splitting the dataset in 2 parts, first part is year 2011 and the second part is year 2012. Then we are splitting subset of year 2011 to be 50% training dataset and 50% validation dataset. The year 2012 dataset will be used for prediction.
 
 ```{r}
 # Set a seed for reproducibility
@@ -72,10 +62,8 @@ year2012$Type <- "Validation"
 
 # Combine training and validation data
 mydata <- rbind(year2011, year2012)
-
 ```
 
-## Boxplots for proposed covariates y
 
 We choose 3 questions of interest:
 
@@ -83,7 +71,8 @@ We choose 3 questions of interest:
 2. **How does season affect the number of casual users?** where Y is the sqrt(casual users)
 3. **Is weather correlated to the number of bike rentals?* ** where Y is the count of bikes rented 
 
-### NOTE - we probably need to do stratified sampling as in lab 9 comment, since we do not have equal representation in both training and validation datasets. We should address this issue - look into this further.
+## Boxplots for proposed covariates y 
+
 
 ```{r}
 
@@ -111,13 +100,34 @@ ggplot(mydata, aes(x = Type, y = cnt, color = Type)) +
   ggtitle("# Total Users by Type (Training vs. Validation)") +
   theme_bw()
 
+# Function to calculate statistics
+calculate_statistics <- function(x) {
+  return(c(
+    Min = min(x, na.rm = TRUE),
+    Q1 = quantile(x, 0.25, na.rm = TRUE),
+    Median = median(x, na.rm = TRUE),
+    Mean = mean(x, na.rm = TRUE),
+    Q3 = quantile(x, 0.75, na.rm = TRUE),
+    Max = max(x, na.rm = TRUE)
+  ))
+}
+
+
 ```
+
 
 ```{r}
 #creating training data our of mydata (training -> data from 2011)
 training_data <- subset(mydata, Type == "Training")
 summary(training_data)
 ```
+```{r}
+#creating training data our of mydata (validatioin -> data from 2012)
+validation_data <- subset(mydata, Type == "Validation")
+summary(validation_data)
+```
+
+
 
 ## Full models for each question
 We are fitting full model which will be used to stepwise regression later. We address multicollinearity issue and delete variables that might cause it.
@@ -160,6 +170,10 @@ summary(stepwise_model1)
 summary(stepwise_model2)
 summary(stepwise_model3)
 ```
+#### model 1: R^2 = 0.8075
+#### model 2: R^2 = 0.8016
+#### model 3: R^2 = 0.8928
+
 
 ```{r}
 avPlots(stepwise_model1)
@@ -167,7 +181,7 @@ avPlots(stepwise_model2)
 avPlots(stepwise_model3)
 ```
 
-For vif, values close to 1 indicate no multicollinearity, values between 1-2 indicate mild collinearity which is not ideal but can be considered ok since it won't severaly impact the interpretability of the coefficients, values aboved 2 indicate severe multicollinearity which is considered unreliable.
+For vif, values close to 1 indicate no multicollinearity, values between 1-3 indicate mild collinearity which is not ideal but can be considered ok since it won't severaly impact the interpretability of the coefficients, values above indicate severe multicollinearity which is considered unreliable.
 
 ```{r}
 vif(stepwise_model1)
@@ -230,7 +244,6 @@ cat("Mean Absolute Percentage Error (MPE):", round(mape1, digits = 4), "\n")
 
 
 #second question
-
 observed_values2 <- sqrt(validation_data$casual) #should I transform it here??
 predicted_values2 <- validation_data$predicted_sqrtcasual
 rmse2 <- RMSE(predicted_values2, observed_values2)
@@ -260,9 +273,109 @@ cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
 ```
 
 
-## Diagnostics
+
+
+
+#### not working for model 3??
+
+## Diagnostics of Training model
+we **choose** model 1 because it has best RMSE and R^2 (it is done for whole 2011 year)
 
 ```{r}
+#done on model 1
+m.mlr <- lm(registered ~ as.factor(workingday) + as.factor(season) + holiday + 
+    temp + hum + windspeed + as.factor(weathersit),
+                 data = year2011)
+
+```
+
+
+```{r}
+diagnostics_df <- data.frame(
+  Residuals = resid(m.mlr),
+  Fitted_Values = fitted(m.mlr),
+  Standardized_Residuals = rstandard(m.mlr),
+  Leverage = hatvalues(m.mlr)
+  #Date = year2011$dteday
+)
+
+# Create the standardized residuals vs. fitted values plot
+ggplot(diagnostics_df, aes(x = Fitted_Values, y = Residuals)) +
+  geom_point(col="blue", alpha=0.75) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs( title = "Residuals vs. Fitted Values",
+        x = "Fitted Values", y = "Residuals") +
+  theme_bw()
+
+# Create the QQ plot
+ggplot(diagnostics_df, aes(sample = Standardized_Residuals)) +
+  stat_qq(aes(sample = Standardized_Residuals), distribution = qnorm,
+          size = 2, col="blue", alpha = 0.75) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(title = "Standardized Residual QQ Plot",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_bw()
+
+# Create the sqrt(|standardized residuals|) vs. fitted values plot
+ggplot(diagnostics_df, aes(x = Fitted_Values, y = sqrt(abs(Standardized_Residuals)))) +
+  geom_point(col="blue", alpha=0.75) +
+  labs( title = "Residuals vs. Fitted Values",
+        x = "Fitted Values", y = "sqrt(|Standardized Residuals|)") +
+  theme_bw()
+
+# Leverage vs Standardized Residuals
+ggplot(diagnostics_df, aes(x = Leverage, y = Standardized_Residuals)) +
+  geom_point(alpha = 0.75) +
+  labs(title = "Standardized Residuals vs. Leverage Plot",
+       x = "Leverage", y = "Standardized Residuals") +
+  theme_bw()
+
+```
+# Prediction
+
+
+```{r}
+validation2012<- subset(validation_data)
+validation2012$predicted_registered <- predict(m.mlr, newdata = validation2012)
+summary(validation2012$predicted_registered)
+
+```
+
+
+```{r}
+# Extract observed and predicted values
+observed_values <- validation2012$registered
+predicted_values <- validation2012$predicted_registered
+rmse <- RMSE(predicted_values, observed_values)
+mae <- MAE(predicted_values, observed_values)
+mape <- MAPE(predicted_values, observed_values)
+r_squared <- R2_Score(predicted_values, observed_values)
+
+
+cat("Root Mean Squared Error (RMSE):", round(rmse, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape, digits = 4), "\n")
+```
+
+
+```{r}
+ggplot(validation2012, aes(x = registered, y = predicted_registered)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Observed Values", y = "Predicted Values",
+       title = "Observed vs. Predicted Values") +
+  theme_bw()
+
+
+# Residuals plot
+ggplot(validation2012, aes(x = 1:nrow(validation2012), y = registered-predicted_registered)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 0, color = "red", linetype = "dashed") +
+  labs(x = "Observation Index", y = "Residuals",
+       title = "Observed vs. Predicted Values") +
+  theme_bw()
+
 
 ```
 
