@@ -429,17 +429,37 @@ cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
 #### not working for model 3??
 
 ## Diagnostics of Training model
+<<<<<<< HEAD
+we **choose** model 1 because it has best RMSE for validation
+=======
 
 we **choose** model 1 because it has best RMSE and R\^2 (it is done for whole 2011 year)
+>>>>>>> 28b87880e8cf96217b4749193c10a26cc1a98bae
 
 ```{r}
-#done on model 1
-m.mlr <- lm(registered ~ as.factor(workingday) + as.factor(season) + holiday + 
-    temp + hum + windspeed + as.factor(weathersit),
-                 data = year2011)
+#stepwise regression on model 1
+m.mlr <- lm(registered ~ as.factor(workingday) + as.factor(season) +
+    temp + windspeed + as.factor(weathersit),
+                 data = training_data)
+
+#original regression question 1
+m.mlr1 <- lm(registered ~ as.factor(workingday) + as.factor(weathersit),
+                 data = training_data)
+
+#question2
+m.mlr2 <- lm(sqrt(casual) ~ as.factor(workingday) + as.factor(season) + holiday + 
+  temp + hum + windspeed + as.factor(weathersit),
+                 data = training_data)
+
 
 ```
 
+<<<<<<< HEAD
+
+
+
+=======
+>>>>>>> 28b87880e8cf96217b4749193c10a26cc1a98bae
 ```{r}
 diagnostics_df <- data.frame(
   Residuals = resid(m.mlr),
@@ -515,7 +535,6 @@ ggplot(validation2012, aes(x = observed_values, y = predicted_values)) +
        title = "Observed vs. Predicted Values") +
   theme_bw()
 
-
 # Residuals plot
 ggplot(validation2012, aes(x = 1:nrow(validation2012), y = observed_values-predicted_values)) +
   geom_point() +
@@ -523,7 +542,6 @@ ggplot(validation2012, aes(x = 1:nrow(validation2012), y = observed_values-predi
   labs(x = "Observation Index", y = "Residuals",
        title = "Observed vs. Predicted Values") +
   theme_bw()
-
 
 ```
 
