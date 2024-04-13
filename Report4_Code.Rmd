@@ -1,6 +1,6 @@
 ---
 title: "report4"
-author: "Viktoria Zruttova"
+author: "Team1"
 date: "2024-04-07"
 output: html_document
 ---
@@ -161,7 +161,9 @@ par(mfrow = c(1, 1))
 ### Categorical Predictors: [weather, season, workingday] Continuous Predictors: [temperature, feeling temperature, wind speed, humidity]
 
 #### Counts and Proportions For categorical
+
 The categorical variables in the two data sets have similar counts and proportions.
+
 ```{r}
 #model1 <- lm(registered~as.factor(workingday) + as.factor(yr) + as.factor(weather))
 #model2 <- lm(sqrt(casual)~as.factor(season) + as.factor(yr) + as.factor(weather) + as.factor(workingday))
@@ -254,7 +256,9 @@ print(validation_props_weathersit)
 ```
 
 #### Histograms For continuous Predictors
+
 All four continuous variables are similarly distributed in the two data sets. In general, the temperature in 2012 is higher than in 2011, and the humidity is relatively lower and more widely spread in 2012 than that in 2011. Also, the wind speed is generally higher in 2012.
+
 ```{r}
 #For temp
 par(mfrow = c(1, 2))
@@ -287,8 +291,8 @@ par(mfrow = c(1, 1))
 
 We are fitting full model which will be used to stepwise regression later. We address multicollinearity issue and delete variables that might cause it.
 
-
 ### Viki trail 1
+
 ```{r}
 #viki trail 1
 
@@ -429,12 +433,8 @@ cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
 #### not working for model 3??
 
 ## Diagnostics of Training model
-<<<<<<< HEAD
-we **choose** model 1 because it has best RMSE for validation
-=======
 
-we **choose** model 1 because it has best RMSE and R\^2 (it is done for whole 2011 year)
->>>>>>> 28b87880e8cf96217b4749193c10a26cc1a98bae
+we **choose** model 1 because it has best RMSE for validation
 
 ```{r}
 #stepwise regression on model 1
@@ -454,12 +454,6 @@ m.mlr2 <- lm(sqrt(casual) ~ as.factor(workingday) + as.factor(season) + holiday 
 
 ```
 
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> 28b87880e8cf96217b4749193c10a26cc1a98bae
 ```{r}
 diagnostics_df <- data.frame(
   Residuals = resid(m.mlr),
@@ -545,7 +539,6 @@ ggplot(validation2012, aes(x = 1:nrow(validation2012), y = observed_values-predi
 
 ```
 
-
 ### Kaylee Trial 1
 
 ```{r}
@@ -571,6 +564,7 @@ avPlots(full_model3)
 ```
 
 Compared with Viki's first trial, the AIC for model2 improved as well.(1151 to 1147)
+
 ```{r}
 stepwise_model1 <- step(full_model1, direction = "both")
 stepwise_model2 <- step(full_model2, direction = "both")
@@ -594,9 +588,11 @@ vif(stepwise_model1)
 vif(stepwise_model2)
 vif(stepwise_model3)
 ```
+
 The above vif is the result after doing following changes: Because of high multicollinearity of workingday and weekday in model2, we will remove one of them from model2. We also remove sqrt from sqrt(casual) in model 3, which changes back to casual, the multicollinearity reduces because GVIF of casual goes down from 4.88 to 3.57, but the R-squared for model3 reduces from 90% to 88%, which is good because effect of overfitting reduces.
 
 ### Kaylee Trial 2
+
 ```{r}
 #kaylee trial 2
 
@@ -643,7 +639,6 @@ vif(stepwise_model1)
 vif(stepwise_model2)
 vif(stepwise_model3)
 ```
-
 
 # Validation
 
@@ -725,9 +720,12 @@ cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
 
 
 ```
-#### model1 R^2 = 80%, R^2 score = -0.84, RMSE = 1931
-#### model2 R^2 = 79%, R^2 score = 0.5814, RMSE = 7.64
-#### model3 R^3 = 89%, R^2 score = NaN, RMSE = NaN
+
+#### model1 R\^2 = 80%, R\^2 score = -0.84, RMSE = 1931
+
+#### model2 R\^2 = 79%, R\^2 score = 0.5814, RMSE = 7.64
+
+#### model3 R\^3 = 89%, R\^2 score = NaN, RMSE = NaN
 
 #### not working for model 3??
 
@@ -831,3 +829,318 @@ ggplot(validation2012, aes(x = 1:nrow(validation2012), y = observed_values-predi
 
 
 ```
+
+# For Regression Model we got from Report 3
+## Model Fitting & obtain outputs of the model
+
+```{r}
+model1 <- lm(registered ~ as.factor(workingday)+ as.factor(weathersit) + temp + windspeed,
+             data = training_data)
+summary(model1) #r^2 = 0.6532 
+#model2
+model2 <- lm(sqrt(casual)~as.factor(season) + as.factor(weathersit) + as.factor(workingday),data = training_data)
+summary(model2) #r^2 = 0.6873 
+#model3
+model3 <- lm(cnt ~  temp + windspeed + hum  + as.factor(workingday),data = training_data)
+summary(model3) #r^2 = 0.6511 
+```
+
+```{r}
+#Model Diagnostics: to assess assumptions and multicollinearity
+
+#!!!Model1!!!
+# Plotting added variable plots
+avPlots(model1)
+# Check for multicollinearity: computing variance inflation factors (VIFs)
+vif(model1)
+# Create a data frame with the residuals and fitted values
+diagnostics_df1 <- data.frame(Residuals1 = resid(model1),
+                             Fitted_Values1 = fitted(model1),
+                             Standardized_Residuals1 = rstandard(model1),
+                             Leverage1 = hatvalues(model1),
+                             Season = training_data$season,
+                             Workingday = training_data$workingday,
+                             Weather = training_data$weathersit)
+
+#!!!Model2!!!
+avPlots(model2)
+vif(model2)
+diagnostics_df2 <- data.frame(Residuals2 = resid(model2),
+                              Fitted_Values2 = fitted(model2),
+                              Standardized_Residuals2 = rstandard(model2),
+                              Leverage2 = hatvalues(model2),
+                              Season = training_data$season,
+                            Workingday = training_data$workingday,
+                             Weather = training_data$weathersit)
+
+#!!!Model3!!!
+avPlots(model3)
+vif(model3)
+diagnostics_df3 <- data.frame(Residuals3 = resid(model3),
+                              Fitted_Values3 = fitted(model3),
+                              Standardized_Residuals3 = rstandard(model3),
+                              Leverage3 = hatvalues(model3),
+                              Season = training_data$season,
+                              Workingday = training_data$workingday,
+                             Weather = training_data$weathersit)
+```
+
+plot the diagnostics
+
+```{r}
+#!!!Model1!!!
+# Create the standardized residuals vs. fitted values plot
+ggplot(diagnostics_df1, aes(x = Fitted_Values1, y = Residuals1)) +
+  geom_point(col="blue", alpha=0.75) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs( title = "Residuals vs. Fitted Values",
+        x = "Fitted Values", y = "Residuals") +
+  theme_bw()
+# Create the QQ plot
+ggplot(diagnostics_df1, aes(sample = Standardized_Residuals1)) +
+  stat_qq(aes(sample = Standardized_Residuals1), distribution = qnorm,
+          size = 2, col="blue", alpha = 0.75) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(title = "Standardized Residual QQ Plot",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_bw()
+# Create the sqrt(|standardized residuals|) vs. fitted values plot
+ggplot(diagnostics_df1, aes(x = Fitted_Values1, y = sqrt(abs(Standardized_Residuals1)))) +
+  geom_point(col="blue", alpha=0.75) +
+  labs( title = "Residuals vs. Fitted Values",
+        x = "Fitted Values", y = "sqrt(|Standardized Residuals|)") +
+  theme_bw()
+# Leverage vs Standardized Residuals
+ggplot(diagnostics_df1, aes(x = Leverage1, y = Standardized_Residuals1)) +
+  geom_point(alpha = 0.75) +
+  labs(title = "Standardized Residuals vs. Leverage Plot",
+       x = "Leverage", y = "Standardized Residuals") +
+  theme_bw()
+
+```
+
+```{r}
+#!!!Model2!!!
+#residual vs fitted values
+ggplot(diagnostics_df2, aes(x = Fitted_Values2, y = Residuals2)) +
+  geom_point(col="blue", alpha=0.75) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs( title = "Residuals vs. Fitted Values",
+        x = "Fitted Values", y = "Residuals") +
+  theme_bw()
+#QQ plot
+ggplot(diagnostics_df2, aes(sample = Standardized_Residuals2)) +
+  stat_qq(aes(sample = Standardized_Residuals2), distribution = qnorm,
+          size = 2, col="blue", alpha = 0.75) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(title = "Standardized Residual QQ Plot",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_bw()
+#sqrt(|standardized residuals|) vs. fitted values plot
+ggplot(diagnostics_df2, aes(x = Fitted_Values2, y = sqrt(abs(Standardized_Residuals2)))) +
+  geom_point(col="blue", alpha=0.75) +
+  labs( title = "Residuals vs. Fitted Values",
+        x = "Fitted Values", y = "sqrt(|Standardized Residuals|)") +
+  theme_bw()
+# Leverage vs Standardized Residuals
+ggplot(diagnostics_df2, aes(x = Leverage2, y = Standardized_Residuals2)) +
+  geom_point(alpha = 0.75) +
+  labs(title = "Standardized Residuals vs. Leverage Plot",
+       x = "Leverage", y = "Standardized Residuals") +
+  theme_bw()
+```
+
+```{r}
+#!!!Model3!!!
+#residual vs fitted values
+ggplot(diagnostics_df3, aes(x = Fitted_Values3, y = Residuals3)) +
+  geom_point(col="blue", alpha=0.75) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs( title = "Residuals vs. Fitted Values",
+        x = "Fitted Values", y = "Residuals") +
+  theme_bw()
+#QQ plot
+ggplot(diagnostics_df3, aes(sample = Standardized_Residuals3)) +
+  stat_qq(aes(sample = Standardized_Residuals3), distribution = qnorm,
+          size = 2, col="blue", alpha = 0.75) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(title = "Standardized Residual QQ Plot",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_bw()
+#sqrt(|standardized residuals|) vs. fitted values plot
+ggplot(diagnostics_df3, aes(x = Fitted_Values3, y = sqrt(abs(Standardized_Residuals3)))) +
+  geom_point(col="blue", alpha=0.75) +
+  labs( title = "Residuals vs. Fitted Values",
+        x = "Fitted Values", y = "sqrt(|Standardized Residuals|)") +
+  theme_bw()
+# Leverage vs Standardized Residuals
+ggplot(diagnostics_df3, aes(x = Leverage3, y = Standardized_Residuals3)) +
+  geom_point(alpha = 0.75) +
+  labs(title = "Standardized Residuals vs. Leverage Plot",
+       x = "Leverage", y = "Standardized Residuals") +
+  theme_bw()
+```
+
+#Prediction: training and validation
+
+#Model1 - training
+
+```{r}
+#model1
+training_data$Predicted_registered <- predict(model1, training_data)
+# Extract observed and predicted values
+observed_values1 <- training_data$registered
+predicted_values1 <- training_data$Predicted_registered
+# Calculate different prediction performance metrics
+#rmse
+rmse1 <- RMSE(predicted_values1, observed_values1)
+#mae
+mae1 <- MAE(predicted_values1, observed_values1)
+#mape
+mape1 <- MAPE(predicted_values1, observed_values1)
+#r^2
+r_squared1 <- R2_Score(predicted_values1, observed_values1)
+#display
+cat("Root Mean Squared Error (RMSE):", round(rmse1, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae1, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared1, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape1, digits = 4), "\n")
+# Root Mean Squared Error (RMSE): 619.1167 
+# Mean Absolute Error (MAE): 519.1348 
+# R-squared (R^2) Score: 0.658 
+# Mean Absolute Percentage Error (MPE): 0.2562 
+```
+
+#Model1 - validation
+
+```{r}
+validation_data$Predicted_registered <- predict(model1, validation_data)
+# Extract observed and predicted values
+observed_values1 <- validation_data$registered
+predicted_values1 <- validation_data$Predicted_registered
+# Calculate different prediction performance metrics
+#rmse
+rmse1 <- RMSE(predicted_values1, observed_values1)
+#mae
+mae1 <- MAE(predicted_values1, observed_values1)
+#mape
+mape1 <- MAPE(predicted_values1, observed_values1)
+#r^2
+r_squared1 <- R2_Score(predicted_values1, observed_values1)
+#display
+cat("Root Mean Squared Error (RMSE):", round(rmse1, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae1, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared1, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape1, digits = 4), "\n")
+# Root Mean Squared Error (RMSE): 1993.671 
+# Mean Absolute Error (MAE): 1805.783 
+# R-squared (R^2) Score: -0.9646 
+# Mean Absolute Percentage Error (MPE): 0.5715 
+```
+
+#Model2 - training
+
+```{r}
+# Extract observed and predicted values
+sqrt_casual <- sqrt(training_data$casual)
+observed_values2 <- sqrt_casual
+training_data$Predicted_sqrt_casual <- predict(model2, training_data)
+predicted_values2 <- training_data$Predicted_sqrt_casual 
+
+#rmse
+rmse2 <- RMSE(predicted_values2, observed_values2)
+#mae
+mae2 <- MAE(predicted_values2, observed_values2)
+#mape
+mape2 <- MAPE(predicted_values2, observed_values2)
+#r^2
+r_squared2 <- R2_Score(predicted_values2, observed_values2)
+#display
+cat("Root Mean Squared Error (RMSE):", round(rmse2, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae2, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared2, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape2, digits = 4), "\n")
+# Root Mean Squared Error (RMSE): 5.8451 
+# Mean Absolute Error (MAE): 4.5223 
+# R-squared (R^2) Score: 0.6925 
+# Mean Absolute Percentage Error (MPE): 0.2555 
+```
+
+#Model2 - validation
+
+```{r}
+# Extract observed and predicted values
+sqrt_casual <- sqrt(validation_data$casual)
+observed_values2 <- sqrt_casual
+validation_data$Predicted_sqrt_casual <- predict(model2, validation_data)
+predicted_values2 <- validation_data$Predicted_sqrt_casual 
+
+#rmse
+rmse2 <- RMSE(predicted_values2, observed_values2)
+#mae
+mae2 <- MAE(predicted_values2, observed_values2)
+#mape
+mape2 <- MAPE(predicted_values2, observed_values2)
+#r^2
+r_squared2 <- R2_Score(predicted_values2, observed_values2)
+#display
+cat("Root Mean Squared Error (RMSE):", round(rmse2, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae2, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared2, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape2, digits = 4), "\n")
+# Root Mean Squared Error (RMSE): 8.9667 
+# Mean Absolute Error (MAE): 6.9653 
+# R-squared (R^2) Score: 0.4235 
+# Mean Absolute Percentage Error (MPE): 0.2525 
+```
+
+#Model 3 - training
+
+```{r}
+observed_values3 <- training_data$cnt
+training_data$Predicted_cnt <- predict(model3, newdata = training_data)
+predicted_values3 <- training_data$Predicted_cnt
+#rmse
+rmse3 <- RMSE(predicted_values3, observed_values3)
+#mae
+mae3 <- MAE(predicted_values3, observed_values3)
+#mape
+mape3 <- MAPE(predicted_values3, observed_values3)
+#r^2
+r_squared3 <- R2_Score(predicted_values2, observed_values2)
+#display
+cat("Root Mean Squared Error (RMSE):", round(rmse3, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae3, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared3, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
+# Root Mean Squared Error (RMSE): 808.7555 
+# Mean Absolute Error (MAE): 649.4414 
+# R-squared (R^2) Score: 0.4235 
+# Mean Absolute Percentage Error (MPE): 0.2749 
+```
+
+#Model 3 - validation
+
+```{r}
+observed_values3 <- validation_data$cnt
+validation_data$Predicted_cnt <- predict(model3, newdata = validation_data)
+predicted_values3 <- validation_data$Predicted_cnt
+#rmse
+rmse3 <- RMSE(predicted_values3, observed_values3)
+#mae
+mae3 <- MAE(predicted_values3, observed_values3)
+#mape
+mape3 <- MAPE(predicted_values3, observed_values3)
+#r^2
+r_squared3 <- R2_Score(predicted_values2, observed_values2)
+#display
+cat("Root Mean Squared Error (RMSE):", round(rmse3, digits = 4), "\n")
+cat("Mean Absolute Error (MAE):", round(mae3, digits = 4), "\n")
+cat("R-squared (R^2) Score:", round(r_squared3, digits = 4), "\n")
+cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
+# Root Mean Squared Error (RMSE): 2373.45 
+# Mean Absolute Error (MAE): 2119.981 
+# R-squared (R^2) Score: 0.4235 
+# Mean Absolute Percentage Error (MPE): 0.6334 
+```
+
