@@ -734,12 +734,8 @@ cat("Mean Absolute Percentage Error (MPE):", round(mape3, digits = 4), "\n")
 we **choose** model 2 because it has best RMSE and R\^2 (it is done for whole 2011 year)
 
 ```{r}
-#done on model 1
-#m.mlr <- lm(registered ~ as.factor(workingday) + as.factor(season) + holiday + 
- #   temp + hum + windspeed + as.factor(weathersit),
-  #               data = year2011)
 m.mlr <- lm( sqrt(casual)~ as.factor(workingday) + as.factor(season)+ temp + hum + windspeed + as.factor(weathersit),
-                 data = year2011)
+                 data = training_data)
 
 ```
 
@@ -828,6 +824,125 @@ ggplot(validation2012, aes(x = 1:nrow(validation2012), y = observed_values-predi
   theme_bw()
 
 
+```
+
+# Fit AR(1) Model for the model2 we chose
+
+```{r}
+head(training_data$dteday)
+```
+
+```{r}
+# Create a new data frame 'tempdataset' by selecting specific columns from 'training_data'
+# For 'Date' column: training_data$dteday contains the date in "dd/mm/yyyy" format.
+# We use the as.Date function and specify the format as "%d/%m/%Y" to match ...
+tempdataset <- data.frame(Date = as.Date(training_data$dteday, format = "%d/%m/%Y"),
+                          CasualUsers = training_data$casual,
+                          WorkingDay = training_data$workingday,
+                          Season = training_data$season,
+                          Temperature = training_data$temp,
+                          Humidity = training_data$hum,
+                          WindSpeed = training_data$windspeed,
+                          Weathersit = training_data$weathersit)
+
+# Ensure there are no missing values
+Dataset <- tempdataset[complete.cases(tempdataset), ]
+
+# Remove the 'tempdataset' data frame from the R environment
+rm(tempdataset)
+
+# Add a square root transformation of the CasualUsers column
+Dataset$SqrtCasualUsers <- sqrt(Dataset$CasualUsers)
+
+# Fit the model
+m.mlr <- lm(SqrtCasualUsers ~ as.factor(WorkingDay) + as.factor(Season) + 
+            Temperature + Humidity + WindSpeed + as.factor(Weathersit), 
+            data = Dataset)
+
+# Check the model's summary
+summary(m.mlr)
+```
+
+```{r}
+library(ggplot2)
+# Time series modeling
+# Create a variable indicating observations ordered by time
+Dataset$Time_Seq <- order(Dataset$Date)
+
+# Explore the correlation between GroundCO and Time
+ggplot(Dataset, aes(x = Time_Seq, y = SqrtCasualUsers)) +
+  geom_point(color = 'blue', alpha = 0.75) +
+  geom_abline(intercept = 0, slope = 0, color = "red", linetype = "dashed") +
+  labs(x = "Time", y = "SqrtCasualUsers", title = "Time vs. SqrtCasualUsers") +
+  theme_bw()
+```
+
+```{r}
+# Perform Multiple Linear Regression with Time_Seq as a predictor
+m.mlr.time <- lm(SqrtCasualUsers ~ as.factor(WorkingDay) + as.factor(Season) + 
+            Temperature + Humidity + WindSpeed + as.factor(Weathersit) + Time_Seq, data = Dataset)
+
+# Examine themodel fit for m.mlr.time
+summary(m.mlr.time)
+```
+
+```{r}
+# Time Series: Autocorrelation function
+# We shall now study the correlation of the response with respect to time
+#   - Dataset$SqrtCasualUsers: Time series data for which autocorrelation is calculated
+#   - lag.max: Maximum number of lags to compute autocorrelation (default is often set to 10)
+#   - plot: Boolean, whether to plot the autocorrelation function (TRUE or FALSE)
+acf(Dataset$SqrtCasualUsers, lag.max = 100, plot = TRUE)
+acf(residuals(m.mlr.time)[Dataset$Time_Seq], lag.max = 100, plot = TRUE)
+```
+
+In summary, this ACF plot suggests that there is some autocorrelation in the early lags of the **`SqrtCasualUsers`** time series, but it quickly diminishes, implying that recent past values (especially the immediate last value) are somewhat informative in predicting the current value, but this influence diminishes as you go further back in time. We will consider GLS with AR(1) because we have multiple predictors, and there may be autocorrelation in the residuals of a multiple regression model, we will use a GLS model with AR(1) correlation.
+
+## GLS model with AR(1)
+
+```{r}
+#install.packages("nlme")
+```
+
+```{r}
+library(nlme)
+# Run Generalized Least Squares (GLS) with corAR1 model (Auto-Regressive 1)
+# Note: This might take some time, depending on your computer and memory
+m.gls <- gls(SqrtCasualUsers ~ as.factor(WorkingDay) + as.factor(Season) + 
+              Temperature + Humidity + WindSpeed + as.factor(Weathersit),
+              data = Dataset,
+              correlation = corAR1(form = ~ Time_Seq),
+              method = "ML")  # Maximum Likelihood estimation
+
+# Display summary information about the GLS model
+summary(m.gls)
+
+```
+
+```{r}
+# Diagnostics and plots for the time series model
+# Autocorrelation plot of residuals
+acf(residuals(m.gls))
+```
+
+```{r}
+# Plot of fitted values against observed values
+plot(fitted(m.gls), Dataset$SqrtCasualUsers, 
+     xlab = "Fitted Values", ylab = "Observed Values",
+     main = "Fitted vs. Observed Values")
+```
+
+```{r}
+# Plot of residuals over time
+plot(Dataset$Time_Seq, residuals(m.gls), 
+     xlab = "Time", ylab = "Residuals",
+     main = "Residuals over Time")
+```
+
+```{r}
+#full_model2 <- lm( sqrt(casual)~ as.factor(workingday) + as.factor(season)+ temp + hum + windspeed + as.factor(weathersit),
+#                 data = training_data)
+library(forecast)
 ```
 
 # For Regression Model we got from Report 3
