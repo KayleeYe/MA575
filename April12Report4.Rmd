@@ -877,13 +877,33 @@ ggplot(Dataset, aes(x = Time_Seq, y = SqrtCasualUsers)) +
   theme_bw()
 ```
 
+Based on the plot of the relationship between the transformed response variable - the square root of casual users - and the Time, such transformation helps in stabilizing the variance and makes the data more normally distributed.
+
 ```{r}
 # Perform Multiple Linear Regression with Time_Seq as a predictor
 m.mlr.time <- lm(SqrtCasualUsers ~ as.factor(WorkingDay) + as.factor(Season) + 
             Temperature + Humidity + WindSpeed + as.factor(Weathersit) + Time_Seq, data = Dataset)
 
-# Examine themodel fit for m.mlr.time
+# Examine the model fit for m.mlr.time
 summary(m.mlr.time)
+
+#get the AIC BIC R^2
+# Summary of the model
+summary_mmlr_time <- summary(m.mlr.time)
+
+# Extract AIC and BIC
+aic_mmlr_time <- AIC(m.mlr.time)
+bic_mmlr_time <- BIC(m.mlr.time)
+
+# Extract R-squared and Adjusted R-squared
+rsquared_mmlr_time <- summary_mmlr_time$r.squared
+adjrsquared_mmlr_time <- summary_mmlr_time$adj.r.squared
+
+# Print the AIC, BIC, R-squared and Adjusted R-squared
+cat("AIC:", aic_mmlr_time, "\n")
+cat("BIC:", bic_mmlr_time, "\n")
+cat("R-squared:", rsquared_mmlr_time, "\n")
+cat("Adjusted R-squared:", adjrsquared_mmlr_time, "\n")
 ```
 
 ```{r}
@@ -925,25 +945,139 @@ summary(m.gls)
 acf(residuals(m.gls))
 ```
 
-```{r}
-# Plot of fitted values against observed values
-plot(fitted(m.gls), Dataset$SqrtCasualUsers, 
-     xlab = "Fitted Values", ylab = "Observed Values",
-     main = "Fitted vs. Observed Values")
-```
+### Model Fit
 
 ```{r}
+# Calculate predictions
+predictions <- fitted(m.gls)
+
+# Calculate residuals
+residuals <- Dataset$SqrtCasualUsers - predictions
+
+# Calculate RMSE
+rmse <- sqrt(mean(residuals^2))
+
+# Extract log-likelihood to compute AIC and BIC
+loglik <- logLik(m.gls)
+
+# Calculate AIC
+aic <- AIC(m.gls)
+
+# Calculate BIC
+bic <- BIC(m.gls)
+
+# Output the results
+list(RMSE = rmse, AIC = aic, BIC = bic)
+
+######For the R-squared and Adjusted R-squared
+# Total Sum of Squares
+SST <- sum((Dataset$SqrtCasualUsers - mean(Dataset$SqrtCasualUsers))^2)
+
+# Residual Sum of Squares
+RSS <- sum(residuals^2)
+
+# R-squared
+r_squared <- 1 - (RSS/SST)
+
+# Adjusted R-squared
+n <- nrow(Dataset)  # Number of observations
+p <- length(coef(m.gls))  # Number of predictors including intercept
+adj_r_squared <- 1 - ((1 - r_squared) * (n - 1) / (n - p - 1))
+
+# Output R-squared and Adjusted R-squared
+list(R_squared = r_squared, Adjusted_R_squared = adj_r_squared)
+```
+
+### Model Diagnostics
+
+```{r}
+library(nlme)
+#Extract Residuals and Fitted Values:
+fitted_vals <- fitted(m.gls)
+residuals_vals <- residuals(m.gls)
+plot(fitted_vals, residuals_vals,
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "red", lty = 2)
+
+#QQ plot for standardized residual plot
+qqnorm(residuals_vals, main = "Q-Q Residuals")
+qqline(residuals_vals, col = "red", lty = 2)
+
+#Scale-Location Plot (Spread vs Level):
+# First, ensure there are no missing values in the residuals or the fitted values
+resid <- residuals(m.gls, type = "pearson")  # Pearson residuals are standardized
+fitted_vals <- fitted(m.gls)
+# Since we're plotting sqrt of abs(residuals), ensure no NAs are produced in the process
+# Calculate the square root of the absolute standardized residuals
+sqrt_abs_std_resid <- sqrt(abs(resid))
+# Now create the Scale-Location plot
+plot(fitted_vals, sqrt_abs_std_resid,
+     xlab = "Fitted Values",
+     ylab = "Sqrt of Absolute Standardized Residuals",
+     main = "Scale-Location")
+abline(h = 0, col = "red", lty = 2)
+
+```
+
+### Model Prediction
+
+
+```{r}
+Vtempdataset <- data.frame(Date = as.Date(validation_data$dteday, format = "%d/%m/%Y"),
+                          CasualUsers = validation_data$casual,
+                          WorkingDay = validation_data$workingday,
+                          Season = validation_data$season,
+                          Temperature = validation_data$temp,
+                          Humidity = validation_data$hum,
+                          WindSpeed = validation_data$windspeed,
+                          Weathersit = validation_data$weathersit)
+
+# Ensure there are no missing values
+VDataset <- Vtempdataset[complete.cases(Vtempdataset), ]
+
+# Remove the 'tempdataset' data frame from the R environment
+rm(Vtempdataset)
+
+# Add a square root transformation of the CasualUsers column
+VDataset$SqrtCasualUsers <- sqrt(VDataset$CasualUsers)
+library(ggplot2)
+# Time series modeling
+# Create a variable indicating observations ordered by time
+VDataset$Time_Seq <- order(VDataset$Date)
+
+# Explore the correlation between GroundCO and Time
+ggplot(VDataset, aes(x = Time_Seq, y = SqrtCasualUsers)) +
+  geom_point(color = 'blue', alpha = 0.75) +
+  geom_abline(intercept = 0, slope = 0, color = "red", linetype = "dashed") +
+  labs(x = "Time", y = "SqrtCasualUsers", title = "Time vs. SqrtCasualUsers") +
+  theme_bw()
+```
+
+
+```{r}
+# Predict using the validation dataset
+VDataset$PredictedSqrtCasualUsers <- predict(m.gls, newdata = VDataset)
+
+# Plot of fitted values against observed square root values from the validation dataset
+plot(VDataset$PredictedSqrtCasualUsers, VDataset$SqrtCasualUsers, 
+     xlab = "Predicted Fitted Values", ylab = "Observed Sqrt Casual Users",
+     main = "Predicted vs. Observed Values")
+abline(a = 0, b = 1, col = "red", lty = 2)
+
+# For plotting residuals over time, you need to calculate residuals for the validation dataset.
+# Residuals are the differences between the observed and predicted values.
+VDataset$Residuals <- VDataset$SqrtCasualUsers - VDataset$PredictedSqrtCasualUsers
+
 # Plot of residuals over time
-plot(Dataset$Time_Seq, residuals(m.gls), 
+# Assuming you have a time sequence variable in your validation dataset named Time_Seq
+plot(VDataset$Time_Seq, VDataset$Residuals, 
      xlab = "Time", ylab = "Residuals",
      main = "Residuals over Time")
 ```
 
-```{r}
-#full_model2 <- lm( sqrt(casual)~ as.factor(workingday) + as.factor(season)+ temp + hum + windspeed + as.factor(weathersit),
-#                 data = training_data)
-library(forecast)
-```
+
 
 # For Regression Model we got from Report 3
 
