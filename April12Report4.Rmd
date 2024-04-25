@@ -928,8 +928,7 @@ In summary, this ACF plot suggests that there is some autocorrelation in the ear
 library(nlme)
 # Run Generalized Least Squares (GLS) with corAR1 model (Auto-Regressive 1)
 # Note: This might take some time, depending on your computer and memory
-m.gls <- gls(SqrtCasualUsers ~ as.factor(WorkingDay) + as.factor(Season) + 
-              Temperature + Humidity + WindSpeed + as.factor(Weathersit),
+m.gls <- gls(SqrtCasualUsers ~ as.factor(WorkingDay) + as.factor(Season) + Temperature + Humidity + WindSpeed + as.factor(Weathersit),
               data = Dataset,
               correlation = corAR1(form = ~ Time_Seq),
               method = "ML")  # Maximum Likelihood estimation
